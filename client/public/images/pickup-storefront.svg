@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Pickup storefront</title>
+  <desc id="desc">An original storefront and pickup bag icon in warm orange and deep green.</desc>
+  <rect x="24" y="24" width="464" height="464" rx="112" fill="#F8F0E5"/>
+  <path d="M112 212h288v202H112z" fill="#1E473B"/>
+  <path d="M104 204l38-91h228l38 91z" fill="#E76835"/>
+  <path d="M104 204h76v21a38 38 0 0 1-76 0zm152 0h76v21a38 38 0 0 1-76 0z" fill="#D44D24"/>
+  <path d="M180 204h76v21a38 38 0 0 1-76 0zm152 0h76v21a38 38 0 0 1-76 0z" fill="#F8F0E5"/>
+  <path d="M174 310h164l14 104H160z" fill="#F8F0E5"/>
+  <path d="M222 315v-17a34 34 0 0 1 68 0v17" fill="none" stroke="#F8F0E5" stroke-width="16" stroke-linecap="round"/>
+  <path d="M225 361l22 22 43-44" fill="none" stroke="#E76835" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
