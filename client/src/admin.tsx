@@ -1,3 +1,4 @@
+import { ReleaseUpdates } from './release-updates';
 import { MerchantOperations } from './merchant-operations';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { demoCatalog } from '../../config/demo-catalog';
@@ -20,7 +21,7 @@ function AdminLink({ href, navigate, children, current }: { href: string; naviga
   return <a href={href} aria-current={current ? 'page' : undefined} onClick={(event) => { if (!event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey && event.button === 0) { event.preventDefault(); navigate(href); } }}>{children}</a>;
 }
 /** Grouped navigation/mobile shell adapted from the reviewed source AdminLayout. */
-export function AdminLayout({ path, root, navigate, children, preview, branding = defaultMerchant, onSignOut, commerceAvailable = false, paymentEnvironment='sandbox' }: { path: string; root: string; navigate: Navigate; children: ReactNode; preview: boolean; branding?: MerchantConfig; commerceAvailable?:boolean; paymentEnvironment?:'sandbox'|'production'; onSignOut?: () => void }) {
+export function AdminLayout({ path, root, navigate, children, preview, branding = defaultMerchant, onSignOut, commerceAvailable = false, updatesAvailable = false, paymentEnvironment='sandbox' }: { path: string; root: string; navigate: Navigate; children: ReactNode; preview: boolean; branding?: MerchantConfig; commerceAvailable?:boolean; updatesAvailable?:boolean; paymentEnvironment?:'sandbox'|'production'; onSignOut?: () => void }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const sidebar = useRef<HTMLElement>(null);
@@ -51,6 +52,7 @@ export function AdminLayout({ path, root, navigate, children, preview, branding 
     return () => { document.body.style.overflow = previousOverflow; document.removeEventListener('keydown', keydown); window.removeEventListener('resize', resize); };
   }, [sidebarOpen]);
   const groups = commerceAvailable?[{heading:'Merchant',items:[{href:root,label:'Setup, stock & orders'},{href:`${root}/import`,label:'Import Square products'}]}]:[{ heading: 'Overview', items: [{ href: root, label: 'Dashboard' }] }, { heading: 'Catalog', items: [{ href: `${root}/products`, label: 'Products' }, { href: `${root}/import`, label: 'Import products' }] }, { heading: 'Operations', items: [...(commerceAvailable ? [{ href: `${root}/commerce`, label: 'Stock & orders' }] : []), { href: `${root}/integration`, label: 'Square connection' }, { href: `${root}/square-services`, label: 'Square services' }] }, { heading: 'System', items: [{ href: `${root}/settings`, label: 'Brand & pickup' }] }];
+  if (!preview && updatesAvailable) groups.push({heading:'Releases',items:[{href:`${root}/updates`,label:'Updates'}]});
   const active = activeAdminHref(path, groups.flatMap((group) => group.items.map((item) => item.href)), root);
   return <div className="admin-app" style={{ ...merchantTheme(branding), ...(branding.media?.hero ? { backgroundImage: `linear-gradient(#111118d9, #111118ee), url("${branding.media.hero}")` } : {}) }}>
     {sidebarOpen && <button className="admin-backdrop" aria-label="Close navigation" onClick={closeNavigation} />}
@@ -172,9 +174,11 @@ export function AdminApp() {
     setRole(''); setCsrf(''); setEntries([]); setMerchantImportEnabled(false); setSquareServicesEnabled(false);
     navigate('/admin/login'); reload();
   }
-  return <AdminLayout path={path} root={root} preview={preview} navigate={navigate} branding={branding} commerceAvailable={commerceEnabled} paymentEnvironment={paymentEnvironment} onSignOut={!preview && role === 'admin' && merchantAuthEnabled ? () => { void signOut(); } : undefined}>
+  return <AdminLayout path={path} root={root} preview={preview} navigate={navigate} branding={branding} commerceAvailable={commerceEnabled} updatesAvailable={role === 'admin'} paymentEnvironment={paymentEnvironment} onSignOut={!preview && role === 'admin' && merchantAuthEnabled ? () => { void signOut(); } : undefined}>
+    {!preview && role === 'admin' && path === root && <section className="admin-card"><h2>Template updates</h2><p>Review release notices and owner-controlled upgrade instructions. Your data and customizations are not changed by checking.</p><AdminLink href={`${root}/updates`} navigate={navigate}>Open Updates</AdminLink></section>}
     {path === '/admin/login' ? <MerchantLoginPanel onSignedIn={() => { navigate('/admin'); reload(); }} />
       : error ? <section className="admin-card"><h1>Staff access unavailable</h1><p role="alert">{error}</p><p>This demo does not create staff accounts automatically.</p><a href="/admin/login">Open merchant sign-in</a> · <a href="/admin/preview">Open synthetic draft preview</a></section>
+      : path === `${root}/updates` && !preview && role === 'admin' ? <ReleaseUpdates />
       : commerceEnabled&&role==='admin'&&[root,`${root}/settings`,`${root}/products`,`${root}/commerce`].includes(path)?<MerchantOperations csrfToken={csrf} environment={paymentEnvironment} onMerchantChange={setBranding}/>
       : path === `${root}/settings` && preview ? <MerchantSettingsPreview merchant={branding} baseline={defaultMerchant} onApply={setBranding} onOpenSetup={() => navigate(`${root}/integration`)} />
       : path === `${root}/settings` && storedSettings && role === 'admin' ? <MerchantSettingsEditor key={generation} merchant={branding} baseline={defaultMerchant} onApply={setBranding} onSave={saveSettings} onReload={reload} onOpenSetup={() => navigate(`${root}/integration`)} />

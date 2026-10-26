@@ -1,3 +1,4 @@
+import { createReleaseChecker } from './release-updates';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import express, { type Request } from 'express';
 import type { SqlDatabase } from '../../db/sql-database';
@@ -55,6 +56,7 @@ function sameToken(actual: string | undefined, expected: string): boolean {
 /** Explicit allowlist guard adapted from source; no permissive role fallback or login provisioning. */
 export function adminCatalogRouter(options: { paymentEnvironment?:'sandbox'|'production'; commerce?: express.Router; verifyStaff?: StaffVerifier; store?: AdminCatalogStore; settings?: MerchantSettingsStore; reconciliation?: SandboxReconciliationQueue; merchantImport?: MerchantImportAdministration; squareServices?: SquareServices; promotion?: SquarePromotionService; origin?: string; runtime?: { native?: boolean; sandbox?: boolean } } = {}) {
   const router = express.Router();
+  const checkRelease = createReleaseChecker();
   router.use(async (req, res, next) => {
     const principal = options.verifyStaff ? await options.verifyStaff(req) : null;
     if (!principal || !principal.id || !['admin', 'manager', 'staff'].includes(principal.role)) {
@@ -69,6 +71,11 @@ export function adminCatalogRouter(options: { paymentEnvironment?:'sandbox'|'pro
       }
     }
     res.locals.staff = principal; next();
+  });
+  router.get('/updates', async (_req,res) => {
+    res.set('Cache-Control','no-store');
+    if ((res.locals.staff as StaffPrincipal).role !== 'admin') { res.status(403).json({error:{code:'ADMIN_REQUIRED'}}); return; }
+    res.json(await checkRelease());
   });
   router.get('/session', (_req, res) => {
     const { id, role, csrfToken } = res.locals.staff as StaffPrincipal;

@@ -1,0 +1,8 @@
+{
+  "version": "0.1.0-rc.1",
+  "releasedAt": "2026-10-26T18:41:11Z",
+  "summary": "Initial MIT release candidate for a developer-operated Square pickup storefront. This version is not a certified 1.0 release.",
+  "securityNotes": "Review the release policy and security guidance before production use. No security certification or automatic patch installation is implied.",
+  "migrationNotes": "No migration is triggered by this notice. Review UPGRADES.md, back up merchant data and configuration, and rehearse any separately required schema changes before adopting code.",
+  "acceptanceNotes": "Fresh buyer installation, normal hosted private-input provisioning, real-phone acceptance and customized-fork upgrade acceptance remain unverified. Do not infer production readiness from this notice."
+}

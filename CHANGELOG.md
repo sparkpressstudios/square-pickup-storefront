@@ -5,6 +5,7 @@
 Sanitized MIT-licensed public-distribution candidate for the existing reviewed implementation. Copyright 2026 SparkPress Studios. Private source provenance is retained separately. This metadata release changes no payment, email, schema or activation behavior. This document does not assert a published repository or Git tag, or production certification.
 
 ### Implemented
+- Free read-only administrator Updates screen: installed/latest version, release/security/migration notes, bounded cached checks and owner-controlled upgrade guidance. No automatic deployment, migration, paid access or data mutation.
 - Single-merchant/location USD pickup storefront, imported Square catalog and separate website-owned stock.
 - Authoritative Square tax/discount totals, durable checkout identities, signed webhook recovery, refunds and pickup fulfillment.
 - Database-backed merchant configuration, private customer confirmation/status, scoped administrator controls and explicit checkout status.

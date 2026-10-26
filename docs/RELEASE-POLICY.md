@@ -27,3 +27,12 @@ Before a new candidate or stable release, require the normal release checks, foc
 Outstanding readiness categories must remain visible: fresh buyer Railway install, real-device coverage, actual buyer branding/policies/stock, buyer-owned account/security setup, production-payment acceptance and any optional email sender/delivery verification. Existing-host sandbox payment/refund evidence and local restore tests are useful but do not close all those categories. Follow [UPGRADES.md](UPGRADES.md) and the [handoff checklist](MERCHANT-HANDOFF.md).
 
 MIT code rights are independent of optional paid setup, support or maintenance. Those services need separately agreed terms; no price, SLA or maintenance entitlement is included. Public distribution has been approved, but this candidate document does not claim the repository or Railway listing is already published.
+
+
+## Read-only administrator release notices
+
+The authenticated administrator Updates screen checks the fixed public `releases/latest.json` manifest only when opened. Storefront requests do not check it. The server coalesces concurrent checks, caches successful responses for 24 hours, retries failures no more than hourly, limits payloads to 8 KB, rejects redirects and times out after four seconds. There is no background poller or database storage. A restart resets this process-local cache. The release host receives an ordinary server request without merchant credentials or customer data.
+
+Release maintainers publish validated text fields: `version`, `releasedAt`, `summary`, `securityNotes`, `migrationNotes`, and `acceptanceNotes`. Update the package version and manifest together for a newly versioned release; use honest prerelease identifiers and dated release notes. The initial manifest records the public release-candidate packaging timestamp, not proof of production acceptance. Notes are text, not executable content, and upgrade links are fixed official documentation URLs.
+
+Customers choose adoption. No database, environment settings, source fork, deployment or payment is changed by the notice. Essential security information and this notice remain free with the MIT core. This screen does not implement paid access or promise automatic preservation of arbitrary custom source changes.
