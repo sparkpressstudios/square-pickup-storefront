@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-rc.2 — 2026-10-26
+
+Free administrator release notices, following the rc.1 distribution. Installed version is read from the package; the public manifest advertises this newer candidate so rc.1 notice-capable installations can identify it. Older rc.1 installations without the notice feature still require manual review or Railway's template update flow.
+
+- Administrator-only read-only Updates page and dashboard link; bounded cached checks, offline/stale reporting, security/migration/acceptance notes and fixed official upgrade/changelog links.
+- No new schema, configuration migration, credentials, billing, background polling or automatic deployment. Merchant commerce schema remains **2**; optional email schema remains **1**. The existing compatibility and backup/restore guidance still applies.
+- Required full checks retain restart and unknown-outcome regression coverage, plus release-notice authentication, cache, failure, SemVer and UI tests. Historical local restore evidence is unchanged. No hosted or custom-fork upgrade rehearsal is claimed for rc.2; those acceptance gaps remain open.
+- All rc.1 production, fresh-buyer, real-device and optional email acceptance limits below remain in effect. This candidate does not unlock premium access or change free MIT rights.
+
 ## 0.1.0-rc.1 — 2026-10-26
 
 Sanitized MIT-licensed public-distribution candidate for the existing reviewed implementation. Copyright 2026 SparkPress Studios. Private source provenance is retained separately. This metadata release changes no payment, email, schema or activation behavior. This document does not assert a published repository or Git tag, or production certification.

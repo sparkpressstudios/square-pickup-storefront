@@ -24,3 +24,8 @@ After explicit endpoint approval, a public endpoint was created at 12:21 UTC. Th
 The published first-admin stdin provisioning path on a fresh Railway host, real mobile-device acceptance, safe upgrade of a customized/ejected buyer fork, actual buyer policies/stock/credentials and live production-payment acceptance remain separate gates. Optional sender/account setup and actual authorized mail delivery are also separate. Narrow viewport checks do not prove real-device behavior; accepted email does not prove inbox arrival.
 
 Follow the manual installation and operating handoff. Preserve all existing provider identities and unknown liabilities across restarts/restores. This summary grants no permission to provision resources, configure secrets, enable payments or send mail.
+
+
+## rc.2 release notices
+
+The rc.2 change adds free authenticated read-only release notices, not a new merchant schema or production-acceptance claim. The historical rc.1 evidence above remains historical. Required local regression checks and focused release-notice tests accompany the rc.2 commit; hosted/mobile card acceptance and customized-fork upgrade rehearsal remain unverified.

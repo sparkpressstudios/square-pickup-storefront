@@ -58,3 +58,9 @@ test('Updates navigation is available only when verified admin capability is sup
   assert.equal(html.includes('href="/admin/updates"'),available);
  }
 });
+
+test('versioned manifest matches package and rc.1 sees rc.2 as available',async()=>{
+ assert.equal(manifest.version,installedVersion);assert.equal(manifest.version,'0.1.0-rc.2');
+ const checker=createReleaseChecker((async()=>new Response(JSON.stringify(manifest))) as typeof fetch,Date.now,'0.1.0-rc.1');
+ const result=await checker();assert.equal(result.state,'available');assert.equal(result.installedVersion,'0.1.0-rc.1');assert.equal(result.latest?.version,'0.1.0-rc.2');
+});
