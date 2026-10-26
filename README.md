@@ -1,6 +1,6 @@
 # Square Commerce Starter
 
-**0.1.0-rc.1 — public-distribution release candidate, not production certification.** A standalone, customizable single-merchant/location storefront for USD physical pickup. Licensed under the [MIT License](LICENSE), copyright 2026 SparkPress Studios: free to use, modify, fork, redistribute and sell, subject to the license notice requirements. Optional paid setup/support is separate; terms and prices are not established here. The intended repository is `sparkpressstudios/square-pickup-storefront`; this candidate document does not assert that publication has occurred.
+**0.1.0-rc.1 — public-distribution release candidate, not production certification.** A standalone, customizable single-merchant/location storefront for USD physical pickup. Licensed under the [MIT License](LICENSE), copyright 2026 SparkPress Studios: free to use, modify, fork, redistribute and sell, subject to the license notice requirements. Optional paid setup/support is separate; terms and prices are not established here. The clean source is public at [sparkpressstudios/square-pickup-storefront](https://github.com/sparkpressstudios/square-pickup-storefront).
 
 ## Start here
 
@@ -46,4 +46,4 @@ Supported branding/settings belong in the merchant database and protected enviro
 
 This sanitized candidate deliberately excludes private operational journals, hosted acceptance credentials/configuration and target-specific helper paths. Original private history is retained separately. Generic financial/identity regression tests and applied migration SQL remain intact; run the candidate's own full checks rather than quoting an upstream test count as export evidence.
 
-The application uses the [MIT License](LICENSE). Retain the separate third-party font notices and [asset provenance](docs/ASSET-NOTICES.md). The owner-approved vulnerability reporting address is in [SECURITY.md](SECURITY.md). Preparing this candidate does not itself create a public repository or Railway listing.
+The application uses the [MIT License](LICENSE). Retain the separate third-party font notices and [asset provenance](docs/ASSET-NOTICES.md). The owner-approved vulnerability reporting address is in [SECURITY.md](SECURITY.md). This publication provides the source repository only; a Railway marketplace listing and fresh-host, mobile and real-email acceptance remain outstanding.
