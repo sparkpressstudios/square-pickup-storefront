@@ -1,6 +1,7 @@
 /** Local-only acceptance: generated merchant data, injected provider and routed fake card SDK.
  * Never loads environment credentials or contacts Square. Chromium/Playwright must already exist.
  * Run after pnpm build: node --import tsx scripts/merchant-browser-acceptance.ts
+ * Browser-free fixture proof: append --fixture-check. Narrow windows are not real-device proof.
  */
 import assert from 'node:assert/strict';
 import { createHmac, randomUUID } from 'node:crypto';
@@ -15,11 +16,21 @@ import { initializeEmptyMerchantCatalog, MerchantCatalogImportStore } from '../s
 import { previewSquareSandboxCatalog } from '../server/src/square-catalog-readonly';
 import { initializeMerchantCommerce } from '../db/merchant-commerce';
 import { createMerchantCommerceApp } from '../server/src/merchant-commerce-app';
+import { MerchantCommerce } from '../server/src/merchant-commerce';
+import { MerchantSquareProvider } from '../server/src/merchant-square-provider';
+import { sandboxConfiguration } from '../server/src/square-sandbox';
 import type { MerchantStaffAuth } from '../server/src/merchant-staff-auth';
 const require = createRequire(import.meta.url);
-const { chromium } = require('playwright');
 const origin = 'https://merchant-browser.example.invalid';
 const serveOnly = process.argv.includes('--serve-only');
+const fixtureCheck = process.argv.includes('--fixture-check');
+assert.ok(!(serveOnly && fixtureCheck), 'Choose one fixture mode');
+// Probe browser availability before opening any fixture database/listener. Never disable
+// Chromium's sandbox to work around a restricted host. serve-only needs no browser package.
+const browser = serveOnly || fixtureCheck ? undefined : await (async () => {
+  const { chromium } = require('playwright');
+  return chromium.launch({ executablePath: '/usr/bin/chromium', headless: true, chromiumSandbox: true });
+})();
 let local = '';
 // Local synthetic fixture ONLY: no production env values, no actual Square calls.
 // The fixed loopback server is intentionally not tunneled or exposed publicly.
@@ -31,6 +42,7 @@ const db = await PGlite.create();
 const money = (amount: number) => ({ amount, currency: 'USD' });
 const calls: { path: string; body: any }[] = [];
 const provider: typeof fetch = async (url, init) => {
+  assert.equal(new URL(String(url)).origin, 'https://connect.squareupsandbox.com', 'Only injected sandbox provider requests are permitted');
   const path = new URL(String(url)).pathname; const body = JSON.parse(String(init?.body)); calls.push({ path, body });
   if (path.startsWith('/v2/orders')) return new Response(JSON.stringify({ order: { ...body.order, id: path.endsWith('/calculate') ? undefined : 'ORDER_' + body.order.reference_id,
     line_items: body.order.line_items.map((line: any) => ({ ...line, base_price_money: money(1000), gross_sales_money: money(1000), total_discount_money: money(100), total_tax_money: money(90), total_money: money(990) })), total_discount_money: money(100), total_tax_money: money(90), total_money: money(990) } }));
@@ -55,6 +67,17 @@ await store.commit(staged.fingerprint, identity, 'fixture-operator', 'approve-di
 await initializeMerchantCommerce(db, settings);
 const auth: MerchantStaffAuth = { origin, verifyStaff: async () => ({ id: 'fixture-admin', role: 'admin', csrfToken: 'fixture-csrf-token-long-enough' }), login: async () => { throw new Error('No credentials in this fixture'); }, logout: async () => {} };
 const merchant = { name: 'Studio Market', descriptor: 'Made for everyday moments', tagline: 'Good things, close to home.', introduction: 'Thoughtful favorites from our studio to yours.', currency: 'USD' as const, fulfillment: 'pickup' as const, pickup: { label: 'Studio counter', instructions: 'Pick up at the studio counter during posted hours.' }, theme: { accent: '#A1AB74', background: '#f9f8f4' } };
+const commerce = new MerchantCommerce(db, new MerchantSquareProvider(sandboxConfiguration(settings), provider), {merchantId:identity.squareMerchantId,locationId:identity.squareLocationId});
+const readiness = await commerce.configure({reviewed:true,branding:{name:merchant.name,tagline:merchant.tagline,accentColor:merchant.theme.accent,backgroundColor:merchant.theme.background},support:{email:'support@example.invalid',url:'https://example.invalid/support'},policies:{termsUrl:'https://example.invalid/terms',privacyUrl:'https://example.invalid/privacy',refundUrl:'https://example.invalid/refunds'},inventory:{authority:'website-allocation',allocationReviewed:true},pickup:{timeZone:'UTC',leadMinutes:15,weeklyHours:Array.from({length:7},(_,weekday)=>({weekday,opens:'00:00',closes:'24:00'})),blackoutDates:[]}});
+assert.equal(readiness.ready,true);
+assert.equal((await db.query<{enabled:boolean}>('SELECT enabled FROM merchant_commerce_config')).rows[0]!.enabled,false,'Readiness must not activate checkout');
+assert.equal((await commerce.catalog()).products[0]!.variants[0]!.enabled,false);
+if(fixtureCheck){
+  assert.equal(calls.length,0);
+  await db.close();
+  console.log('FIXTURE_ONLY_PASS: schema2, imported disabled catalog, reviewed Studio Market pickup/readiness, checkout remains closed; zero provider dispatches. No browser acceptance or screenshots claimed.');
+  process.exit(0);
+}
 const app = createMerchantCommerceApp(db, settings, auth, merchant, provider);
 app.use(express.static(join(process.cwd(), 'dist/client')));
 app.get(['/', '/admin', '/admin/*rest'], (_req, res) => res.sendFile(join(process.cwd(), 'dist/client/index.html')));
@@ -75,8 +98,7 @@ if (serveOnly) {
   process.once('SIGINT', () => { void shutdown(); }); process.once('SIGTERM', () => { void shutdown(); });
   await new Promise<void>(() => {});
 }
-const browser = await chromium.launch({ executablePath: '/usr/bin/chromium', headless: true });
-const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+const context = await browser!.newContext({ viewport: { width: 1440, height: 1000 } });
 const browserErrors: string[] = [];
 const fakeSdk = `window.Square={payments(){return{async card(){return{async attach(target){document.querySelector(target).innerHTML='<label>Fake sandbox card (injected test only)<input aria-label="Fake sandbox card" value="4111111111111111"></label>'},async destroy(){},async tokenize(details){window.__tokenizationAmount=details.amount;return{status:'OK',token:'browser-injected-test-card'}}}}}}};`;
 await context.route('**/*', async (route: any) => {
@@ -91,7 +113,7 @@ page.on('pageerror', (error: Error) => browserErrors.push(error.message));
 try {
   // Activate imported inventory using the real browser staff controls with injected test auth.
   await page.goto(origin + '/admin/commerce');
-  await page.getByLabel('Available units').fill('3');
+  await page.getByLabel('Units allocated to this website').fill('3');
   await page.getByLabel('Available for sandbox purchase').check();
   await Promise.all([page.waitForResponse((response: any) => response.url().endsWith('/api/admin/commerce/inventory') && response.request().method() === 'GET'), page.getByRole('button', { name: 'Save reviewed stock' }).click()]);
   await page.getByRole('button', { name: 'Open sandbox storefront' }).click();
@@ -103,6 +125,7 @@ try {
   assert.equal(await page.getByRole('button', { name: '3 Checkout' }).isDisabled(), true);
   await page.getByRole('button', { name: 'Add to cart', exact: true }).click();
   await page.getByRole('button', { name: 'Choose pickup · 1 items' }).click();
+  await page.screenshot({ path: join(output, '02b-cart-desktop.png'), fullPage: true });
   await page.getByLabel('Pickup name').fill('Browser Test Shopper');
   await page.getByLabel('Email', { exact: true }).fill('browser@example.invalid');
   await page.getByLabel('Phone (with country code').fill('+12025550100');
@@ -175,5 +198,5 @@ try {
   await page.screenshot({ path: join(output, '07-storefront-narrow.png'), fullPage: true });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
   assert.deepEqual(browserErrors, []);
-  console.log(JSON.stringify({ result: 'PASS', provider: 'injected fake; no Square network', sdk: 'routed fake; not real SDK acceptance', checks: ['persisted taxed catalog import', 'admin stock and activation', 'pickup', 'authoritative total', 'amount-bound tokenization', 'single payment', 'reload same identity', 'desktop and narrow viewport', 'admin partial refund without restock', 'receipt refund recovery', 'distinct persisted read/write capabilities', 'private receipt tab has no checkout authority', 'explicit no-email confirmation'], screenshots: output, providerRequests: calls.map(call => call.path) }, null, 2));
-} finally { await context.close(); await browser.close(); await new Promise<void>(resolve => server.close(() => resolve())); await db.close(); }
+  console.log(JSON.stringify({ result: 'PASS', provider: 'injected fake; no Square network', sdk: 'routed fake; not real SDK acceptance', checks: ['persisted taxed catalog import', 'admin stock and activation', 'pickup', 'authoritative total', 'amount-bound tokenization', 'single payment', 'reload same identity', 'desktop and ordinary narrow window (not mobile emulation or real-phone proof)', 'admin partial refund without restock', 'receipt refund recovery', 'distinct persisted read/write capabilities', 'private receipt tab has no checkout authority', 'explicit no-email confirmation'], screenshots: output, providerRequests: calls.map(call => call.path) }, null, 2));
+} finally { await context.close(); await browser!.close(); await new Promise<void>(resolve => server.close(() => resolve())); await db.close(); }

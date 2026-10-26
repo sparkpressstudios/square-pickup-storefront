@@ -104,7 +104,35 @@ NODE_BIN='<verified absolute installed Node path>'
 
 Only run the initializer against the already approved empty merchant database, with protected configuration inherited from the container. Use the reviewed upgrade action for an existing recognized schema instead; never repeat empty initialization after an uncertain outcome without inspection. No values from the environment need to be printed.
 
-**Console is not a password-entry workaround.** The published first-admin command still requires a trusted non-echoing stdin stream and refuses interactive TTY input. Do not paste a password, password hash/verifier, session key or provider secret into Console commands, history, logs or chat. If a safe authorized stream cannot be supplied, stop administrator provisioning and use the separately authorized SSH/operator path above. No public hash-seeding helper or alternate provisioning API is supplied.
+**First administrator: owner-private input, unchanged stdin provisioning.** The provisioning script refuses interactive TTY input. A human owner using their own trusted Bash Console can supply a non-echoing input stream with the wrapper below; the child receives a pipe, not the terminal. An assistant must stop before password entry and must not type, retrieve or inspect the password. Do not paste passwords, hashes/verifiers, session keys or provider secrets into commands, history, logs or chat. No public hash-seeding helper or alternate provisioning API is supplied.
+
+With `NODE_BIN` already set to the verified absolute installed executable, run this nonsecret command from the deployed repository:
+
+```bash
+(
+  set +x
+  set +a
+  set -o pipefail
+  builtin unset SQ_BUYER_ADMIN_STDIN_SECRET || exit 1
+  trap 'builtin unset SQ_BUYER_ADMIN_STDIN_SECRET' EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+
+  if ! IFS= builtin read -r -s -p 'New administrator password: ' SQ_BUYER_ADMIN_STDIN_SECRET; then
+    builtin printf '\nPassword input canceled; no provisioning command was started.\n' >&2
+    exit 1
+  fi
+
+  builtin printf '\n'
+  builtin printf '%s' "$SQ_BUYER_ADMIN_STDIN_SECRET" |
+    "$NODE_BIN" --import tsx scripts/provision-merchant-admin.ts --password-stdin
+  exit "$?"
+)
+```
+
+The owner enters the approved 16–128-byte password privately at the prompt. The subshell disables tracing and automatic export before reading, uses a non-exported variable, passes input through Bash's built-in `printf`, and clears it on exit. This does not protect against a compromised browser, terminal-input recording, shell hooks or administrators inspecting process memory: use only a trusted private Console. If that trust or a supported secure input path is unavailable, use the separately authorized SSH/operator path instead; never weaken the script's safeguards.
+
+Local PTY/native PostgreSQL checks verified one successful administrator, no password echo or secret in child arguments/environment, and zero accounts after Ctrl-C/EOF **at the prompt**, even with inherited tracing/allexport. This wrapper has **not yet been verified in the hosted Railway Console**. An interruption after submitting the password can have an uncertain database outcome; inspect before retrying and never reset an existing account merely to repeat this proof.
 
 Fresh-host evidence currently covers the hold and published schema initializer through Console. A separately authorized private hash-only administrator provisioning operation succeeded, but it is **not** proof of the documented stdin provisioning path and is not a buyer instruction. Normal runtime subsequently deployed successfully and passed the platform healthcheck. An explicitly approved public endpoint and exact-origin-aligned deployment are now established; authenticated HTTPS administrator login was verified at 14:02:57 UTC, with the protected dashboard signed in, checkout closed, no imported variants or checkout attempts, and email disabled. The final browser reload preserved that signed-in state. After this bounded proof, app and database compute were stopped while services, the database volume and data were retained; retained storage may still incur charges. The isolated proof services and volume were subsequently deleted after separate explicit owner approval; this does not authorize deleting any buyer data. See [the evidence boundary](EVIDENCE.md).
 
