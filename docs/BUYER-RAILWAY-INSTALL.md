@@ -2,13 +2,13 @@
 
 **Current entrypoint — 2026-10-26.** Start here, not at the historical demo instructions in README. V1 is one merchant/location, USD, physical pickup and website-owned stock. The clean source distribution is MIT-licensed; production authorization and access to merchant accounts/infrastructure are not implied by that license or this guide.
 
-The existing implementation has real existing-host Square Sandbox/browser payment, refund and pickup evidence, plus local native PostgreSQL fresh-setup/restore evidence. **A new buyer's fresh Railway deployment has not been verified.** Existing-host acceptance is not proof of a reproducible new hosted installation. See [sanitized evidence](EVIDENCE.md) and [operator handoff](MERCHANT-HANDOFF.md).
+The existing implementation has real existing-host Square Sandbox/browser payment, refund and pickup evidence, plus local native PostgreSQL fresh-setup/restore evidence. **Fresh Railway proof is partial:** a new app/database reached the non-serving hold, and the published schema initializer succeeded through the authenticated Railway Console. The normal merchant runtime subsequently deployed successfully and passed its platform `/api/health` check. An explicitly approved public endpoint was then created and an origin-aligned deployment passed its platform healthcheck. Authenticated secure-browser login and the complete documented first-admin stdin path on that host remain unverified. Existing-host acceptance is not proof of a reproducible new hosted installation. See [sanitized evidence](EVIDENCE.md) and [operator handoff](MERCHANT-HANDOFF.md).
 
 ## 1. Establish the target and access before executing
 
 The owner approves the target project/environment, one app service, a dedicated PostgreSQL service/volume, spending limits and responsible operator. Record their IDs and a full tested release commit. Never reuse the historical synthetic or acceptance database as a buyer database. Do not create these resources, grant repository access or transfer credentials merely because these instructions exist.
 
-The operator needs an authorized shell with Node 22.12+ within 22.x or Node 24.x, pnpm 12.14.0, this exact release checkout, and connectivity to the dedicated database. **A laptop cannot resolve a Railway private-network database hostname just because Railway variables were copied into it.** Use an approved same-private-network operator shell, or an already approved reachable database connection with verified TLS. If neither is available, stop before schema setup and record that installation blocker; do not expose a database or create a temporary service as an implicit workaround. The temporary SSH hold workflow below addresses the first-start/private-network dependency without exposing a setup endpoint. It is operator-driven, not one-click provisioning, and has not yet been verified in a fresh buyer Railway deployment.
+The operator needs an authorized shell with Node 22.12+ within 22.x or Node 24.x, pnpm 12.14.0, this exact release checkout, and connectivity to the dedicated database. **A laptop cannot resolve a Railway private-network database hostname just because Railway variables were copied into it.** Use an approved same-private-network operator shell, or an already approved reachable database connection with verified TLS. If neither is available, stop before schema setup and record that installation blocker; do not expose a database or create a temporary service as an implicit workaround. The temporary non-serving hold workflow below addresses the first-start/private-network dependency without exposing a setup endpoint. It is operator-driven, not one-click provisioning. The Console schema-initialization portion has fresh-host evidence; the complete install sequence remains unverified.
 
 ## 2. Supply server configuration securely
 
@@ -62,7 +62,7 @@ The package alias already supplies `--password-stdin`; **do not append it again*
 
 ### Private-network first install: temporary non-serving SSH hold
 
-Use this only for a newly approved buyer app/database, never as an alternate mode for an existing storefront with pending orders. [Railway SSH](https://docs.railway.com/cli/ssh) supports commands in running containers and piped stdin without a PTY; it also documents service-instance access without a public domain. These platform capabilities support the following proposed operator sequence, **not yet fresh-host acceptance evidence**. Prerequisite: authenticated Railway access and an existing registered SSH key authorized for this exact service/workspace. The CLI can prompt to register a key on first use; do not accept that access-changing prompt without the owner's specific authorization. This guide performs no key registration/access grant.
+Use this only for a newly approved buyer app/database, never as an alternate mode for an existing storefront with pending orders. [Railway SSH](https://docs.railway.com/cli/ssh) supports commands in running containers and piped stdin without a PTY; it also documents service-instance access without a public domain. These platform capabilities support the SSH operator sequence below; the complete SSH path is **not yet fresh-host acceptance evidence**. For SSH, the prerequisite is authenticated Railway access and an existing registered SSH key authorized for this exact service/workspace. The CLI can prompt to register a key on first use; do not accept that access-changing prompt without the owner's specific authorization. This guide performs no key registration/access grant.
 
 1. Configure the same release/app environment above. In protected service settings add `BUYER_BOOTSTRAP_MODE=manual-ssh-only-v1`, `BUYER_BOOTSTRAP_PROJECT_ID`, `BUYER_BOOTSTRAP_ENVIRONMENT_ID` and `BUYER_BOOTSTRAP_SERVICE_ID` matching the actual Railway-provided target IDs. Set `BUYER_BOOTSTRAP_EXPIRES_AT` to an owner-approved absolute UTC deadline no more than one hour after intended startup. Do not silently extend the deadline after expiry.
 2. For this one temporary deployment, use build `pnpm check`, static-only predeploy `node scripts/check-setup.mjs --profile merchant-sandbox`, start `node scripts/merchant-bootstrap-hold.mjs`, **no HTTP healthcheck**, one replica and restart policy **Never**. Review any effective legacy override. The hold opens no port, connects to no database, seeds nothing and prints no secrets; it only keeps an authenticated operator target alive until its fixed expiry. Do not attach a public domain to this hold. This is not a storefront and should receive no public traffic. The native schema initializer is never a predeploy hook.
@@ -83,6 +83,30 @@ Use this only for a newly approved buyer app/database, never as an alternate mod
 5. Remove the temporary `BUYER_BOOTSTRAP_*` variables and replace the temporary start/health settings with the normal values below. Keep predeploy static-only; restore the reviewed normal bounded restart policy. Deploy the same tested release after this specific cutover is approved. Preserve the database/volume. After switching to the normal serving runtime, attach or verify the separately approved public domain and HTTPS certificate; its origin must exactly match `PUBLIC_ORIGIN`. Do not attach a public domain while the non-serving hold is active. If the final origin differs from the planned value, stop and obtain the required configuration/subscription approval before aligning the protected origin and exact Square callback URL/signing key. Then verify HTTPS login and the closed merchant storefront before import/activation. If SSH, non-PTY streaming, private DNS or hold deployment does not work on the target, stop and record the blocker; never expose the database or add resources as a silent fallback.
 
 The offline buyer-plan checker below intentionally **rejects** the hold start command: it checks the normal operating state only. The hold's deadline stops its process, not retained storage charges; the owner must still complete the agreed compute/storage cleanup. A redeploy after expiry cannot pass the old deadline.
+
+### Authenticated Railway Console alternative for schema setup
+
+For the same approved, running hold deployment, the Railway dashboard's native Console is an alternative operator shell. In the fresh-host proof it opened without registering an SSH key. That observation does not grant new account access or prove every account has Console permission. Verify the selected project/environment/service and running release before executing anything. Keep the hold's no-domain, no-healthcheck, Never-restart and fixed-deadline restrictions unchanged.
+
+The observed Console shell did not include Node in `PATH`, although the deployed image had a supported Node installation. Discover the installed binary instead of copying a version-specific path from an old receipt:
+
+```sh
+command -v node || find /mise/installs/node -type f -path '*/bin/node' -print
+```
+
+This lists executable candidates, not permission to install a new runtime. If the image uses another layout or lists multiple versions, inspect its approved runtime configuration; do not guess or download a replacement. Select the trusted deployed binary matching the supported Node version and verify it. From the deployed repository directory containing `package.json` and `scripts/`, use:
+
+```sh
+NODE_BIN='<verified absolute installed Node path>'
+"$NODE_BIN" --version
+"$NODE_BIN" --import tsx scripts/setup-merchant-commerce.ts --initialize-empty
+```
+
+Only run the initializer against the already approved empty merchant database, with protected configuration inherited from the container. Use the reviewed upgrade action for an existing recognized schema instead; never repeat empty initialization after an uncertain outcome without inspection. No values from the environment need to be printed.
+
+**Console is not a password-entry workaround.** The published first-admin command still requires a trusted non-echoing stdin stream and refuses interactive TTY input. Do not paste a password, password hash/verifier, session key or provider secret into Console commands, history, logs or chat. If a safe authorized stream cannot be supplied, stop administrator provisioning and use the separately authorized SSH/operator path above. No public hash-seeding helper or alternate provisioning API is supplied.
+
+Fresh-host evidence currently covers the hold and published schema initializer through Console. A separately authorized private hash-only administrator provisioning operation succeeded, but it is **not** proof of the documented stdin provisioning path and is not a buyer instruction. Normal runtime subsequently deployed successfully and passed the platform healthcheck. An explicitly approved public endpoint and exact-origin-aligned deployment are now established; authenticated secure-browser login remains unproven while its user authorization prompt is pending. See [the evidence boundary](EVIDENCE.md).
 
 ## 4. Set and verify effective Railway service commands
 
