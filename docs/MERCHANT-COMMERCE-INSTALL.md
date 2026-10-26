@@ -66,7 +66,7 @@ pnpm merchant:db:setup --upgrade-reviewed-catalog
 
 Neither command creates the database, grants access, provisions staff, imports products, enables stock or activates live payments. Existing unknown schemas are refused. The additive merchant schema stores its version/checksum and reuses the reviewed sandbox webhook projections. Never edit an applied migration to force startup.
 
-Provision the initial administrator only after the separate account/credential action is approved. Supply the password via a trusted, non-echoing stdin stream:
+Provision the initial administrator only after the separate account/credential action is approved. Supply a password of **16–128 UTF-8 bytes, without ASCII control characters**, via a trusted, non-echoing stdin stream:
 
 ```sh
 pnpm merchant:admin:provision

@@ -52,7 +52,7 @@ For a recognized existing merchant catalog/commerce schema only, use the reviewe
 pnpm merchant:db:setup --upgrade-reviewed-catalog
 ```
 
-Provision the first administrator once, with the separately approved password supplied through a trusted **non-echoing stdin stream**:
+Provision the first administrator once, with a separately approved password of **16–128 UTF-8 bytes, without ASCII control characters**, supplied through a trusted **non-echoing stdin stream**:
 
 ```sh
 pnpm merchant:admin:provision
@@ -80,7 +80,7 @@ Use this only for a newly approved buyer app/database, never as an alternate mod
    ```
 
    This is the direct script, so exactly one stdin flag is required. Do not type passwords into SSH arguments, environment variables, shell history or a public setup form. Confirm the first-admin receipt; uncertain provisioning requires inspection, not an account reset.
-5. Remove the temporary `BUYER_BOOTSTRAP_*` variables and replace the temporary start/health settings with the normal values below. Keep predeploy static-only; restore the reviewed normal bounded restart policy. Deploy the same tested release after this specific cutover is approved. Preserve the database/volume, then verify HTTPS login and the closed merchant storefront before import/activation. If SSH, non-PTY streaming, private DNS or hold deployment does not work on the target, stop and record the blocker; never expose the database or add resources as a silent fallback.
+5. Remove the temporary `BUYER_BOOTSTRAP_*` variables and replace the temporary start/health settings with the normal values below. Keep predeploy static-only; restore the reviewed normal bounded restart policy. Deploy the same tested release after this specific cutover is approved. Preserve the database/volume. After switching to the normal serving runtime, attach or verify the separately approved public domain and HTTPS certificate; its origin must exactly match `PUBLIC_ORIGIN`. Do not attach a public domain while the non-serving hold is active. If the final origin differs from the planned value, stop and obtain the required configuration/subscription approval before aligning the protected origin and exact Square callback URL/signing key. Then verify HTTPS login and the closed merchant storefront before import/activation. If SSH, non-PTY streaming, private DNS or hold deployment does not work on the target, stop and record the blocker; never expose the database or add resources as a silent fallback.
 
 The offline buyer-plan checker below intentionally **rejects** the hold start command: it checks the normal operating state only. The hold's deadline stops its process, not retained storage charges; the owner must still complete the agreed compute/storage cleanup. A redeploy after expiry cannot pass the old deadline.
 

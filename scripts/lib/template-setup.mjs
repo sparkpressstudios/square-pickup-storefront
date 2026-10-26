@@ -2,7 +2,7 @@
  * Static, secret-safe setup diagnostics for the lean Railway template.
  * No imports, file access, process mutation, database connections or provider calls.
  * Runtime validators remain authoritative; a successful report is not acceptance.
- * Shape rules were reviewed against main 935c10a. See docs/TEMPLATE-SETUP.md.
+ * For the current manual merchant installation contract, see docs/BUYER-RAILWAY-INSTALL.md.
  */
 export const profiles = Object.freeze(['local-demo', 'railway-demo', 'square-sandbox', 'merchant-sandbox', 'merchant-production']);
 

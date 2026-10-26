@@ -66,3 +66,18 @@ test('temporary operator hold is target-bound, sandbox-only, offline and limited
     assert.doesNotMatch(output, /fictional-password|fictional-sandbox-token/);
   } finally { globalThis.fetch = previous; }
 });
+
+
+test('buyer setup documents password policy, post-hold HTTPS cutover and current reference', async () => {
+  const { readFile } = await import('node:fs/promises');
+  for (const file of ['MERCHANT-COMMERCE-INSTALL.md', 'BUYER-RAILWAY-INSTALL.md']) {
+    const guide = await readFile(new URL('../docs/' + file, import.meta.url), 'utf8');
+    assert.match(guide, /16–128 UTF-8 bytes, without ASCII control characters/);
+  }
+  const buyer = await readFile(new URL('../docs/BUYER-RAILWAY-INSTALL.md', import.meta.url), 'utf8');
+  assert.match(buyer, /After switching to the normal serving runtime, attach or verify the separately approved public domain and HTTPS certificate; its origin must exactly match `PUBLIC_ORIGIN`/);
+  assert.match(buyer, /Do not attach a public domain while the non-serving hold is active/);
+  const checker = await readFile(new URL('../scripts/lib/template-setup.mjs', import.meta.url), 'utf8');
+  assert.match(checker, /docs\/BUYER-RAILWAY-INSTALL\.md/);
+  assert.doesNotMatch(checker, /935c10a|docs\/TEMPLATE-SETUP\.md/);
+});
