@@ -1,0 +1,37 @@
+.merchant-storefront .merchant-brand-button { border: 0; background: transparent; text-align: left; }
+.merchant-field { display: grid; gap: 7px; margin: 16px 0; font-size: 14px; font-weight: 600; }
+.merchant-field input, .merchant-field select { min-height: 44px; padding: 10px 12px; border: 1px solid #9ca3a3; border-radius: 8px; background: white; color: #20262b; width: 100%; font: inherit; }
+.merchant-pickup-form { max-width: 460px; }
+.merchant-pickup-form p { line-height: 1.65; }
+.merchant-totals { margin: 24px 0; }
+.merchant-totals > div { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; }
+.merchant-totals dd { margin: 0; white-space: nowrap; }
+.merchant-grand-total { border-top: 1px solid #b9beb7; font-weight: 700; font-size: 20px; }
+.merchant-storefront code { overflow-wrap: anywhere; }
+.merchant-storefront .cart-panel > .primary-action { margin: 14px 0; }
+.merchant-storefront .shopping-steps button:disabled { opacity: .45; cursor: not-allowed; }
+@media (max-width: 600px) { .merchant-storefront .site-header { gap: 12px; } .merchant-storefront .brand { font-size: 18px; } .merchant-storefront .cart-panel { min-width: 0; } }
+.merchant-cart-quantity { display: flex; align-items: end; gap: 12px; }
+.merchant-cart-quantity label { display: grid; gap: 6px; max-width: 160px; font-size: 12px; }
+.merchant-cart-quantity input { min-height: 44px; max-width: 90px; border: 1px solid #9ca3a3; border-radius: 6px; padding: 8px; font: inherit; }
+.merchant-order-search { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; margin: 20px 0; }
+.merchant-order-search label { display: grid; gap: 8px; flex: 1; min-width: 180px; }
+.merchant-order-search input { min-height: 44px; padding: 10px; font: inherit; }
+.merchant-order-lines { list-style: none; padding: 0; }
+.merchant-order-lines li { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid #dde0d9; }
+.merchant-order-lines small { display: block; margin-top: 5px; }
+.merchant-order code { overflow-wrap: anywhere; }
+.merchant-order details { margin: 14px 0; }
+.merchant-history-pages { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 20px; }
+@media (max-width: 600px) { .merchant-cart-quantity { flex-wrap: wrap; } .merchant-history-pages { flex-wrap: wrap; } }
+.merchant-confirmation { padding: 22px; background: #f0f2e9; border: 1px solid #c5ccba; border-radius: 12px; margin: 20px 0; }
+.merchant-confirmation h2 { margin-top: 0; }
+.merchant-confirmation p { line-height: 1.6; }
+.merchant-confirmation a { text-underline-offset: 3px; overflow-wrap: anywhere; }
+.merchant-storefront > main > h1, .merchant-storefront > main > .merchant-confirmation { max-width: 760px; margin-left: auto; margin-right: auto; }
+.merchant-setup fieldset { border: 1px solid #c5ccba; border-radius: 8px; padding: 16px; margin: 18px 0; }
+.merchant-setup legend { font-weight: 700; }
+.merchant-setup label { display: block; margin: 14px 0; line-height: 1.5; }
+.merchant-setup label > input:not([type=checkbox]), .merchant-setup select { display: block; min-height: 44px; width: min(100%, 600px); padding: 10px; font: inherit; }
+.merchant-hours-row { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid #dde0d9; }
+.merchant-setup input[type=checkbox] { width: 20px; height: 20px; vertical-align: middle; margin-right: 8px; }

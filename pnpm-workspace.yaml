@@ -1,0 +1,4 @@
+# Platform-specific optional packages supply esbuild's binary; keep its installer off.
+# Other unreviewed dependency build scripts still fail under pnpm's strict default.
+allowBuilds:
+  esbuild: false
