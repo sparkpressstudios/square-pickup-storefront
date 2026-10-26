@@ -81,3 +81,16 @@ test('buyer setup documents password policy, post-hold HTTPS cutover and current
   assert.match(checker, /docs\/BUYER-RAILWAY-INSTALL\.md/);
   assert.doesNotMatch(checker, /935c10a|docs\/TEMPLATE-SETUP\.md/);
 });
+
+
+test('public Railway file cannot override explicit setup or merchant deployment profiles', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const config = JSON.parse(await readFile(new URL('../railway.json', import.meta.url), 'utf8'));
+  assert.deepEqual(config, { $schema: 'https://railway.com/railway.schema.json', build: { builder: 'RAILPACK', buildCommand: 'pnpm check' } });
+  const buyer = await readFile(new URL('../docs/BUYER-RAILWAY-INSTALL.md', import.meta.url), 'utf8');
+  assert.match(buyer, /New services cannot opt into deprecated/);
+  assert.match(buyer, /`node scripts\/merchant-bootstrap-hold.mjs` \| `pnpm start:merchant`/);
+  assert.match(buyer, /Healthcheck \| None \| `\/api\/health`/);
+  assert.match(buyer, /Restart \| `NEVER` \| `ON_FAILURE`, maximum 3/);
+  assert.match(buyer, /operator contract, not automatic provisioning/);
+});

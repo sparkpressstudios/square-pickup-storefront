@@ -10,7 +10,7 @@ The current packaging target is **`v0.1.0-rc.1`**, not 1.0 or live merchant cert
 
 Railway documents root-branch update notifications and a user update action in [Template Updates](https://docs.railway.com/templates/updates). Under this policy, a notification is an invitation to review/adopt changes, not permission to force-update a customer. [GitHub-connected deployment triggers](https://docs.railway.com/deployments/github-autodeploys) are a separate configuration/access relationship: changing the branch a buyer's service actually tracks can deploy code independently of a template notification. Review effective source/autodeploy settings before any repository push under a maintenance grant. Do not promise push-once fleet upgrades or automatic merges for ejected/customized forks; that upgrade path still needs a pilot.
 
-Use explicit effective Railway service settings from the [buyer guide](BUYER-RAILWAY-INSTALL.md), not an assumption that legacy `railway.json` controls a new installation. These documents do not change the retained synthetic default or any existing hosted setting.
+Use explicit effective Railway service settings from the [buyer guide](BUYER-RAILWAY-INSTALL.md), not an assumption that legacy `railway.json` controls a new installation. The public legacy file has build settings only so it cannot override the selected setup/merchant deployment profile. This source-only change does not itself mutate hosted settings; deploying it can change effective legacy configuration. The separate private synthetic pilot is unchanged. Owners of older public releases must explicitly review their effective start/health/restart settings before upgrading.
 
 ## Customer adoption versus a maintenance grant
 

@@ -84,7 +84,7 @@ Configure these settings explicitly in the Railway dashboard for the **approved 
 
 Before the normal merchant-runtime deployment, complete only the applicable owner-reviewed schema command above (`--initialize-empty` or `--upgrade-reviewed-catalog`) against the approved separate merchant database. The setup script is an explicit operator action, not a recurring predeploy/startup bootstrap. For private-network first setup, use the [temporary non-serving SSH hold sequence](BUYER-RAILWAY-INSTALL.md#private-network-first-install-temporary-non-serving-ssh-hold); a local `railway run` does not grant private DNS access. Leave `STARTER_DB_BOOTSTRAP` unset; do not install sandbox fixtures, seed credentials or import products by default. Secrets, the session key and first administrator remain manual, owner-approved secure setup steps.
 
-Do **not** rely on this repository's default `railway.json`: it describes the retained synthetic runtime, not a supported new-buyer installation. Confirm the effective deployed settings match the merchant commands above.
+Do **not** rely on `railway.json` to select the merchant runtime. The public file has build settings only, deliberately leaving start/health/restart to the explicit template/dashboard profile in [buyer installation](BUYER-RAILWAY-INSTALL.md). Earlier releases contained synthetic deploy overrides; legacy upgrades must remove those effective overrides and select the intended profile before deploying. Confirm the effective deployed settings match the merchant commands above.
 
 ## First merchant workflow
 

@@ -26,7 +26,7 @@ pnpm dev
 
 Open `http://127.0.0.1:3000`. This default loopback demo uses fictional products, no credentials, provider calls or mail. `pnpm build && pnpm start` serves the built demo. `.env` files are not automatically loaded. For optional durable local synthetic data, use `pnpm db:setup`, then `pnpm dev:durable`; do not substitute a merchant or production database.
 
-The retained `railway.json` and `pnpm start:railway` describe the **synthetic** runtime. They are not the merchant buyer installation contract. Use the exact effective service settings and manual SSH setup in the buyer guide; never make initialization a recurring deploy hook.
+The public `railway.json` retains only the required build and deliberately does not override deployment settings. `pnpm start:railway` remains the **synthetic** runtime, not the merchant entrypoint. Select the explicit setup or merchant runtime profile in the buyer guide; never make initialization a recurring deploy hook. New Railway services use template/dashboard settings, not legacy Config as Code. The old synthetic settings are preserved only as a non-default reference in `examples/railway-synthetic.json`; do not select that example for a merchant installation.
 
 ## Merchant and operator guides
 

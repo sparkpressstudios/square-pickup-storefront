@@ -91,8 +91,10 @@ test('real transport restricts origin/path/method/redirects and bounds responses
   assert.equal(calls, 1);
   await assert.rejects(sandboxHttpTransport(async () => new Response('{}', { headers: { 'content-length': '300000' } }))(request), /too large/);
 });
-test('Railway packaging has a bounded healthcheck, scoped start command and production runtime dependencies', async () => {
-  const railway = JSON.parse(await readFile(new URL('../railway.json', import.meta.url), 'utf8')); const manifest = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+test('explicit synthetic example retains bounded settings without overriding merchant deployment profiles', async () => {
+  const root = JSON.parse(await readFile(new URL('../railway.json', import.meta.url), 'utf8'));
+  assert.equal(root.deploy, undefined); assert.equal(root.build.buildCommand, 'pnpm check');
+  const railway = JSON.parse(await readFile(new URL('../examples/railway-synthetic.json', import.meta.url), 'utf8')); const manifest = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
   assert.equal(railway.deploy.startCommand, 'pnpm start:railway'); assert.equal(railway.deploy.healthcheckPath, '/api/health'); assert.equal(railway.deploy.restartPolicyMaxRetries, 3);
   assert.equal(manifest.dependencies.pg, '8.23.1'); assert.equal(manifest.dependencies.tsx, '4.23.15'); assert.equal(manifest.private, true);
 });

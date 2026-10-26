@@ -138,7 +138,19 @@ Fresh-host evidence currently covers the hold and published schema initializer t
 
 ## 4. Set and verify effective Railway service commands
 
-For the approved merchant app, use the supported service settings interface and verify the effective deployment values, including any legacy file override. Do not assume the repository's default `railway.json` describes this installation: it starts the historical synthetic server. Do not change that default to migrate an unrelated existing service.
+For the approved merchant app, select the explicit profile below in the supported template/dashboard settings and verify the effective deployment values. The public `railway.json` deliberately has no deploy overrides: it must not force the synthetic server, an HTTP healthcheck during the non-serving hold, or an incorrect restart policy. Earlier releases did contain those synthetic overrides. For a legacy service upgrading from them, inspect its config source and explicitly set the intended profile before deploying; do not migrate an unrelated existing service.
+
+| Effective setting | Temporary setup hold | Normal merchant runtime |
+| --- | --- | --- |
+| Build | `pnpm check` | `pnpm check` |
+| Predeploy (static only) | `node scripts/check-setup.mjs --profile merchant-sandbox` | Same sandbox checker |
+| Start | `node scripts/merchant-bootstrap-hold.mjs` | `pnpm start:merchant` |
+| Healthcheck | None | `/api/health` |
+| Restart | `NEVER` | `ON_FAILURE`, maximum 3 |
+| Replicas | 1 | 1 |
+| Domain | None | Separately approved HTTPS origin after cutover |
+
+New services cannot opt into deprecated [Config as Code](https://docs.railway.com/config-as-code); use explicit service/template settings, not a new custom `railway.json` path. Existing legacy files override dashboard values until Railway's documented 2026-12-01 cutoff. Inspect the deployment's configuration source, and clear an obsolete custom config path under an approved legacy migration. Do not run an IaC apply or create resources merely to follow this guide. The profile table is an operator contract, not automatic provisioning or proof that Railway applied it.
 
 | Setting | Required merchant value |
 | --- | --- |
