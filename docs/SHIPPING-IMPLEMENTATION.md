@@ -28,3 +28,11 @@ Each merchant must configure allowed destinations, shipping methods and fixed/fr
 - [Square order creation](https://developer.squareup.com/docs/orders-api/create-orders): include tax/discount details before CalculateOrder. Destination-aware tax correctness is not proven by this template's existing pickup calculation.
 
 The earlier release-candidate and production-acceptance limitations remain unchanged. Do not market this development slice as working live shipping.
+
+## Offline authoritative amount contract (development branch)
+
+`ShippingQuoteService` accepts only a server-registered tax adapter, trusted merchant/location identity, merchant tax-configuration revision, server-owned item prices/discounts/tax-category IDs and merchant rate policy. Buyer input must never construct the adapter registry or supply the merchandise basis. Missing configuration/adapter is a hard failure, not an assumption of zero tax. No real tax adapter, merchant tax rules or external provider calls are included.
+
+The request freezes merchant/location, cart lines, address, selected fee, configuration revision and expiry into one fingerprint. Adapter evidence must echo that identity, have a nonempty reference, matching currency/revision and a bounded future expiry. Inclusive tax stays inside the configured merchandise/shipping basis; only additional taxes increase the amount. Arithmetic, maximums and malformed evidence fail closed. This validates evidence from a trusted adapter—it does not independently prove that a merchant's tax rules are legally correct.
+
+A successful result contains a validated amount and frozen quote fingerprint but always `paymentExecutionEnabled: false`. It is not dispatched to Square, persisted as a checkout attempt, exposed by any route or accepted by current pickup payment code. The fingerprint is not a signature/authentication mechanism: `assertUnchanged` requires an original quote retained by the trusted server, never an original supplied by the buyer. Durable authoritative-quote storage and recovery still need integration before any payment use. Adapter timeout/failure produces no quote and no retry; no error body/PII is echoed.
