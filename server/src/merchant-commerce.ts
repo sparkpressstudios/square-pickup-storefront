@@ -152,6 +152,9 @@ export class MerchantCommerce {
    if(owner?.inventory_owner!=='website')throw new CommerceError('WEBSITE_STOCK_OWNERSHIP_REQUIRED');
    const row=(await tx.query<{revision:number}>('SELECT revision FROM merchant_commerce_inventory WHERE variant_id=$1 FOR UPDATE',[input.variantId])).rows[0];
    if((row?.revision??0)!==input.revision)throw new CommerceError('STOCK_CHANGED');
+   // Available stock must leave capacity for every outstanding reservation to be released.
+   const held=(await tx.query<{total:string}>("SELECT COALESCE(sum(quantity),0)::text AS total FROM merchant_commerce_reservations WHERE variant_id=$1 AND state='held'",[input.variantId])).rows[0]!.total;
+   if(input.quantity+Number(held)>1000000)throw new CommerceError('STOCK_EXCEEDS_CAPACITY');
    await tx.query('INSERT INTO merchant_commerce_inventory(variant_id,stock_quantity,enabled) VALUES($1,$2,$3) ON CONFLICT(variant_id) DO UPDATE SET stock_quantity=EXCLUDED.stock_quantity,enabled=EXCLUDED.enabled,revision=merchant_commerce_inventory.revision+1',[input.variantId,input.quantity,input.enabled]);
   });return this.inventory();
  }

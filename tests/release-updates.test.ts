@@ -59,8 +59,8 @@ test('Updates navigation is available only when verified admin capability is sup
  }
 });
 
-test('versioned manifest matches package and rc.1 sees rc.2 as available',async()=>{
- assert.equal(manifest.version,installedVersion);assert.equal(manifest.version,'0.1.0-rc.2');
- const checker=createReleaseChecker((async()=>new Response(JSON.stringify(manifest))) as typeof fetch,Date.now,'0.1.0-rc.1');
- const result=await checker();assert.equal(result.state,'available');assert.equal(result.installedVersion,'0.1.0-rc.1');assert.equal(result.latest?.version,'0.1.0-rc.2');
+test('versioned manifest matches package and rc.1 and rc.2 see rc.3 as available',async()=>{
+ assert.equal(manifest.version,installedVersion);assert.equal(manifest.version,'0.1.0-rc.3');
+ for(const prior of ['0.1.0-rc.1','0.1.0-rc.2']) {const checker=createReleaseChecker((async()=>new Response(JSON.stringify(manifest))) as typeof fetch,Date.now,prior);
+ const result=await checker();assert.equal(result.state,'available');assert.equal(result.installedVersion,prior);assert.equal(result.latest?.version,'0.1.0-rc.3');}
 });

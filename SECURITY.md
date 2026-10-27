@@ -10,7 +10,7 @@ Include the affected release/commit, a concise description, impact, and safe rep
 
 ## Current support boundary
 
-`0.1.0-rc.2` is an MIT-licensed public-distribution release candidate, not production certification. No production-support SLA, security-fix deadline or long-term-support window is promised. Earlier development commits are not separately supported release lines.
+`0.1.0-rc.3` is an MIT-licensed public-distribution release candidate, not production certification. No production-support SLA, security-fix deadline or long-term-support window is promised. Earlier development commits are not separately supported release lines.
 
 For a confirmed issue, the maintainer should assess severity, prepare a tested correction, document affected/fixed versions and upgrade/rollback requirements, and notify authorized installation contacts through an agreed private channel. Publish sensitive exploit details only after considering customer exposure and remediation. A reporting email does not authorize access to a reporter's infrastructure.
 

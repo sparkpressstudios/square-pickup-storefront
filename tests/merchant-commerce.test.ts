@@ -236,3 +236,10 @@ test('authentication failure recovering an unknown refund cannot erase the origi
   const calls = mock.requests.filter(r => r.path === '/v2/refunds'); assert.equal(calls.length, 2); assert.deepEqual(calls[0]!.body, calls[1]!.body);
   assert.equal(await stock(db), 2); await assert.rejects(service.fulfill(quote.quoteId, 'ready'));
 });
+
+test('available inventory preserves capacity for held pickup stock on cancellation and expiry',async t=>{
+ const db=await PGlite.create();t.after(()=>db.close());await initialize(db,3);const mock=providerFixture(),service=mock.create(db);
+ const edit=async(quantity:number)=>{const row=(await service.inventory())[0]!;return service.updateInventory({variantId:'item-regular',quantity,enabled:true,revision:Number(row.revision)});};
+ const first=await service.quote(cart);await service.prepare(first.quoteId,pickup);await assert.rejects(edit(1000000),errorCode('STOCK_EXCEEDS_CAPACITY'));assert.equal(await stock(db),2);await db.query("UPDATE merchant_commerce_inventory SET stock_quantity=1000000,revision=revision+1 WHERE variant_id='item-regular'");await edit(999999);await service.cancel(first.quoteId);await service.cancel(first.quoteId);assert.equal(await stock(db),1000000);
+ await edit(3);const second=await service.quote(cart);await service.prepare(second.quoteId,pickup);await assert.rejects(edit(1000000),errorCode('STOCK_EXCEEDS_CAPACITY'));await edit(999999);await db.query("UPDATE merchant_commerce_quotes SET expires_at=now()-interval '1 second' WHERE id=$1",[second.quoteId]);await service.expireReserved();await service.expireReserved();assert.equal(await stock(db),1000000);assert.equal((await service.status(second.quoteId)).state,'failed');assert.equal(mock.requests.filter(r=>r.path==='/v2/orders'||r.path==='/v2/payments').length,0);
+});

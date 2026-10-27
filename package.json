@@ -1,6 +1,6 @@
 {
   "name": "square-commerce-starter",
-  "version": "0.1.0-rc.2",
+  "version": "0.1.0-rc.3",
   "private": true,
   "description": "Single-merchant physical-product catalog starter with an isolated synthetic demo",
   "type": "module",

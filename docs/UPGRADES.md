@@ -1,6 +1,6 @@
 # Customization and controlled upgrades
 
-**Current packaging target: `v0.1.0-rc.2`, not a certified 1.0 release.** Each merchant owns a separate application/database and explicitly adopted release commit. The clean distribution is MIT-licensed; the original working repository/history remains private. Optional paid support terms are separate and not established here. Existing-host sandbox evidence does not prove a fresh buyer Railway installation, production acceptance or a seamless upgrade of a customized fork. See [installation](BUYER-RAILWAY-INSTALL.md) and [release/update policy](RELEASE-POLICY.md).
+**Current packaging target: `v0.1.0-rc.3`, not a certified 1.0 release.** Each merchant owns a separate application/database and explicitly adopted release commit. The clean distribution is MIT-licensed; the original working repository/history remains private. Optional paid support terms are separate and not established here. Existing-host sandbox evidence does not prove a fresh buyer Railway installation, production acceptance or a seamless upgrade of a customized fork. See [installation](BUYER-RAILWAY-INSTALL.md) and [release/update policy](RELEASE-POLICY.md).
 
 ## What is configuration, data or a code fork?
 
@@ -13,7 +13,7 @@ There is no plugin compatibility contract, fleet updater, automatic fork merger 
 
 ## Compatibility for this release candidate
 
-| Database state | `v0.1.0-rc.2` operating contract | Required action / rollback boundary |
+| Database state | `v0.1.0-rc.3` operating contract | Required action / rollback boundary |
 | --- | --- | --- |
 | Empty, separately approved merchant database | No automatic startup initialization | Run explicit owner-approved fresh setup before normal merchant startup. |
 | Recognized commerce schema 1 | Not the normal runtime schema | Rehearse the explicit additive upgrade to schema 2; preserve the original checksum/history. |
@@ -26,7 +26,7 @@ Older binaries may reject schema 2 or the optional email tables. Do not infer ba
 
 ## Versioned release and merchant adoption
 
-Every candidate/release must identify a full commit, changelog, configuration/schema compatibility, tested evidence and rollback limits. `v0.1.0-rc.2` describes a prerelease package, not a guarantee of production readiness or support entitlement. No customer installation is changed just because an upstream version exists. The release policy separates proposed stable/development channels, customer adoption and narrowly scoped maintenance authority; no branches, tracking settings or fleet updates are created by these documents.
+Every candidate/release must identify a full commit, changelog, configuration/schema compatibility, tested evidence and rollback limits. `v0.1.0-rc.3` describes a prerelease package, not a guarantee of production readiness or support entitlement. No customer installation is changed just because an upstream version exists. The release policy separates proposed stable/development channels, customer adoption and narrowly scoped maintenance authority; no branches, tracking settings or fleet updates are created by these documents.
 
 For a feature update, the merchant's developer will:
 
