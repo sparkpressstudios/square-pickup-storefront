@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0-rc.3 — 2026-10-27
+
+Pickup inventory correctness patch. Available-stock edits now leave capacity for every held reservation to be released, preventing a near-limit adjustment from trapping cancellation or expiry on the database quantity constraint. Quantity continues to mean available/unreserved units.
+
+- Existing over-capacity stock/hold inconsistencies are not rewritten; operators must reconcile available stock before retrying a previously blocked release.
+- Existing identity/inventory row locks and optimistic revisions are preserved; no blanket prohibition on editing stock with holds.
+- Focused regressions cover rejection of overflowing adjustments, valid near-limit edits, cancellation and expiry releasing exactly once.
+- No new schema, dependencies, credentials, shipping tables/routes, payment behavior, hosting changes or automatic updates. Commerce schema remains **2** and optional email schema **1**.
+- All rc.2 fresh-buyer, production, real-device and customized-fork acceptance gaps remain open. Existing financial/fulfillment identities and restore guidance are unchanged.
+
 ## 0.1.0-rc.2 — 2026-10-26
 
 Free administrator release notices, following the rc.1 distribution. Installed version is read from the package; the public manifest advertises this newer candidate so rc.1 notice-capable installations can identify it. Older rc.1 installations without the notice feature still require manual review or Railway's template update flow.

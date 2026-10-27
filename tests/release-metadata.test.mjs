@@ -4,7 +4,7 @@ import test from 'node:test';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('public release candidate metadata is consistent and preserves release checks',()=>{
  const pkg=JSON.parse(read('package.json'));
- assert.equal(pkg.version,'0.1.0-rc.2');assert.equal(pkg.private,true);
+ assert.equal(pkg.version,'0.1.0-rc.3');assert.equal(pkg.private,true);
  assert.equal(pkg.scripts.check,'pnpm test:setup && pnpm typecheck && pnpm test && pnpm build');
  for(const path of ['README.md','CHANGELOG.md','SECURITY.md'])assert.ok(read(path).includes(pkg.version),path);
  assert.match(read('CHANGELOG.md'),/Sanitized.*distribution/i);

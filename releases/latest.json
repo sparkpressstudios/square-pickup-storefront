@@ -1,8 +1,8 @@
 {
-  "version": "0.1.0-rc.2",
-  "releasedAt": "2026-10-26T21:34:00Z",
-  "summary": "Free read-only administrator Updates screen with installed/latest versions, cached release notices and owner-controlled upgrade guidance. This remains a release candidate, not production certification.",
+  "version": "0.1.0-rc.3",
+  "releasedAt": "2026-10-27T04:43:00Z",
+  "summary": "Pickup inventory safety correction: available-stock adjustments leave room for outstanding reservations to be released on cancellation or expiry. This remains a release candidate, not production certification.",
   "securityNotes": "Review the release policy and security guidance before production use. No security certification or automatic patch installation is implied.",
-  "migrationNotes": "No schema or configuration migration from rc.1 is required for this release. This screen never changes data or deployments. Back up merchant data/configuration and review custom source changes before adopting code; see UPGRADES.md.",
+  "migrationNotes": "No schema, configuration or dependency migration from rc.2 is required. Available quantity remains unreserved stock; edits exceeding the inventory limit after outstanding holds are included now reject. Back up merchant data/configuration and review custom code before adopting this release. No shipping checkout or automatic deployment is introduced. Existing over-capacity stock/hold inconsistencies are not rewritten automatically; an operator must reconcile available stock before retrying release.",
   "acceptanceNotes": "Fresh buyer installation, normal hosted private-input provisioning, real-phone acceptance and customized-fork upgrade acceptance remain unverified. Do not infer production readiness from this notice."
 }

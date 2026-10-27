@@ -1,6 +1,6 @@
 # Square Commerce Starter
 
-**0.1.0-rc.2 — public-distribution release candidate, not production certification.** A standalone, customizable single-merchant/location storefront for USD physical pickup. Licensed under the [MIT License](LICENSE), copyright 2026 SparkPress Studios: free to use, modify, fork, redistribute and sell, subject to the license notice requirements. Optional paid setup/support is separate; terms and prices are not established here. The clean source is public at [sparkpressstudios/square-pickup-storefront](https://github.com/sparkpressstudios/square-pickup-storefront).
+**0.1.0-rc.3 — public-distribution release candidate, not production certification.** A standalone, customizable single-merchant/location storefront for USD physical pickup. Licensed under the [MIT License](LICENSE), copyright 2026 SparkPress Studios: free to use, modify, fork, redistribute and sell, subject to the license notice requirements. Optional paid setup/support is separate; terms and prices are not established here. The clean source is public at [sparkpressstudios/square-pickup-storefront](https://github.com/sparkpressstudios/square-pickup-storefront).
 
 ## Start here
 

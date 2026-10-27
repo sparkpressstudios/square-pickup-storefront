@@ -29,3 +29,7 @@ Follow the manual installation and operating handoff. Preserve all existing prov
 ## rc.2 release notices
 
 The rc.2 change adds free authenticated read-only release notices, not a new merchant schema or production-acceptance claim. The historical rc.1 evidence above remains historical. Required local regression checks and focused release-notice tests accompany the rc.2 commit; hosted/mobile card acceptance and customized-fork upgrade rehearsal remain unverified.
+
+## rc.3 pickup stock-capacity correction
+
+Local regressions exercise outstanding reservation capacity during stock edits and both cancellation/expiry release paths. This does not certify native multi-process race behavior, fresh hosted installation, mobile acceptance or a customized-fork upgrade. No schema migration or shipping capability is added. Historical sandbox and restore evidence above remains historical.

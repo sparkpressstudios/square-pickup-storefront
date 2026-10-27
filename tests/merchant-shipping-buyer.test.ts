@@ -82,3 +82,25 @@ test('present but incompatible optional shipping reservation schema fails stock 
 test('temporary relation shadow cannot hide public shipping holds from stock capacity checks',async()=>{
  const f=await fixture();try{await f.configure();const q=await f.service.quote(input());await f.service.prepare(q.quoteId,q.checkoutToken,contact);await f.db.exec("CREATE TEMP TABLE merchant_shipping_buyer_reservations(variant_id text,quantity integer,state text)");const row=(await f.pickup.inventory())[0]!;await assert.rejects(f.pickup.updateInventory({variantId:'item-regular',quantity:1000000,enabled:true,revision:Number(row.revision)}),/STOCK_EXCEEDS_CAPACITY/);await f.service.cancel(q.quoteId,q.checkoutToken);assert.equal(await f.stock(),2);}finally{await f.db.close();}
 });
+
+test('merchant settings persist drafts, reject stale writers and keep missing tax fail closed',async()=>{
+ const f=await fixture();try{
+ const blank=await f.service.settings();assert.equal(blank.revision,0);assert.equal(blank.readiness.taxAdapterConfigured,false);
+ const draft={revision:0,enabled:true,rates:policy.rates,taxCategories:{},taxConfigurationId:''};
+ const saved=await f.service.saveSettings(draft);assert.equal(saved.revision,1);assert.equal(saved.policy.revision,'1');assert.equal(saved.paymentExecutionEnabled,false);assert.deepEqual(saved.readiness.missingTaxCategories,['item-regular']);
+ assert.equal((await f.restart().settings()).revision,1);await assert.rejects(f.service.quote(input()),/SHIPPING_UNCONFIGURED/);assert.equal(f.calls(),0);
+ await assert.rejects(f.service.saveSettings(draft),/SHIPPING_SETTINGS_CHANGED/);
+ await assert.rejects(f.service.saveSettings({...draft,revision:1,taxConfigurationId:'invented'}),/INVALID_SHIPPING_SETTINGS/);
+ await assert.rejects(f.service.saveSettings({...draft,revision:1,taxCategories:{unknown:'category'}}),/INVALID_SHIPPING_SETTINGS/);
+ const configured=await f.service.saveSettings({...draft,revision:1,taxConfigurationId:'fixture-v1',taxCategories:categories});assert.equal(configured.revision,2);const q=await f.service.quote(input());
+ const changes=await Promise.allSettled([f.service.saveSettings({...draft,revision:2}),f.service.saveSettings({...draft,revision:2})]);assert.equal(changes.filter(x=>x.status==='fulfilled').length,1);assert.equal((await f.service.settings()).revision,3);await assert.rejects(f.service.prepare(q.quoteId,q.checkoutToken,contact),/SHIPPING_UNCONFIGURED|SHIPPING_CONFIGURATION_CHANGED/);assert.equal(await f.stock(),2);
+ await assert.rejects(f.other().settings(),/SHIPPING_CONTEXT_MISMATCH/);
+ }finally{await f.db.close();}
+});
+
+test('shipping settings HTTP requires admin session, origin and CSRF; absent service fails closed',async()=>{
+ const express=(await import('express')).default,{adminCatalogRouter}=await import('../server/src/admin-catalog');const f=await fixture();let role='admin',signedIn=true;const app=express();app.use('/absent',adminCatalogRouter({verifyStaff:async()=>({id:'fixture',role:'admin',csrfToken:'fixture-csrf-valid-token'})}));app.use('/api/admin',adminCatalogRouter({origin:'https://fixture.invalid',shippingBuyer:f.service,verifyStaff:async()=>signedIn?{id:'fixture',role:role as 'admin',csrfToken:'fixture-csrf-valid-token'}:null}));const server=app.listen(0);await once(server,'listening');const url=`http://127.0.0.1:${(server.address() as {port:number}).port}/api/admin/shipping/settings`;
+ const post=(body:unknown,csrf='fixture-csrf-valid-token',origin='https://fixture.invalid')=>fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Origin':origin,'X-CSRF-Token':csrf},body:JSON.stringify(body)});
+ try{assert.equal((await fetch(url.replace('/api/admin/shipping/settings','/absent/shipping/settings'))).status,503);signedIn=false;assert.equal((await fetch(url)).status,401);signedIn=true;role='manager';assert.equal((await fetch(url)).status,403);role='admin';const draft={revision:0,enabled:false,rates:[],taxCategories:{},taxConfigurationId:''};assert.equal((await post(draft,'wrong')).status,403);assert.equal((await post(draft,'fixture-csrf-valid-token','https://evil.invalid')).status,403);const r=await post(draft);assert.equal(r.status,200);assert.equal(r.headers.get('cache-control'),'no-store');assert.equal((await post(draft)).status,409);const regions='AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY'.split(' ');const large={...draft,revision:1,rates:Array.from({length:20},(_,i)=>({id:'r'.repeat(35)+i,label:'Rate label '.repeat(7),regions,amountMinor:100}))};assert.ok(JSON.stringify(large).length>8192);assert.equal((await post(large)).status,200);assert.equal(f.calls(),0);
+ }finally{await new Promise<void>(r=>server.close(()=>r()));await f.db.close();}
+});

@@ -28,9 +28,33 @@ export class MerchantShippingBuyer {
  /** Trusted administrative configuration seam, not bound to buyer request data. */
  async configure(policy:unknown,categories:unknown,taxConfigurationId:string){
   const normalized=parseFixedShippingPolicy(policy);
-  if(!categories||typeof categories!=='object'||Array.isArray(categories)||Object.keys(categories).length>1000||Object.entries(categories).some(([id,value])=>!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)||typeof value!=='string'||!/^[A-Za-z0-9_-]{1,80}$/.test(value))||!this.adapters.has(taxConfigurationId))fail('SHIPPING_UNCONFIGURED');
-  const snapshot=JSON.stringify(categories);await this.identity(this.db);
-  await this.db.query('INSERT INTO public.merchant_shipping_buyer_config(merchant_id,location_id,policy,tax_categories,tax_configuration_id) VALUES($1,$2,$3::jsonb,$4::jsonb,$5) ON CONFLICT(merchant_id,location_id) DO UPDATE SET revision=public.merchant_shipping_buyer_config.revision+1,policy=EXCLUDED.policy,tax_categories=EXCLUDED.tax_categories,tax_configuration_id=EXCLUDED.tax_configuration_id',[this.context.merchantId,this.context.locationId,JSON.stringify(normalized),snapshot,taxConfigurationId]);
+  if(!categories||typeof categories!=='object'||Array.isArray(categories)||Object.keys(categories).length>1000||Object.entries(categories).some(([id,value])=>id.length>80||!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)||typeof value!=='string'||!/^[A-Za-z0-9_-]{1,80}$/.test(value))||!this.adapters.has(taxConfigurationId))fail('SHIPPING_UNCONFIGURED');
+  const snapshot=JSON.stringify(categories);await this.db.transaction(async tx=>{await this.identity(tx,true);await tx.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[`shipping-settings:${this.context.merchantId}:${this.context.locationId}`]);
+  await tx.query('INSERT INTO public.merchant_shipping_buyer_config(merchant_id,location_id,policy,tax_categories,tax_configuration_id) VALUES($1,$2,$3::jsonb,$4::jsonb,$5) ON CONFLICT(merchant_id,location_id) DO UPDATE SET revision=public.merchant_shipping_buyer_config.revision+1,policy=EXCLUDED.policy,tax_categories=EXCLUDED.tax_categories,tax_configuration_id=EXCLUDED.tax_configuration_id',[this.context.merchantId,this.context.locationId,JSON.stringify(normalized),snapshot,taxConfigurationId]);});
+ }
+ /** Administrator draft settings. A saved draft is never permission to execute payments. */
+ async settings(){
+  await this.identity(this.db);
+  const row=(await this.db.query<Configuration>('SELECT * FROM public.merchant_shipping_buyer_config WHERE merchant_id=$1 AND location_id=$2',[this.context.merchantId,this.context.locationId])).rows[0];
+  const variants=(await this.db.query<{id:string;name:string}>('SELECT v.id,p.name FROM catalog_variants v JOIN catalog_products p ON p.id=v.product_id ORDER BY v.id')).rows;
+  const missing=variants.filter(v=>!row?.tax_categories[v.id]).map(v=>v.id);
+  return {revision:row?.revision??0,policy:row?parseFixedShippingPolicy(row.policy):{enabled:false,revision:'0',rates:[]},taxCategories:row?.tax_categories??{},taxConfigurationId:row?.tax_configuration_id??'',availableTaxConfigurations:[...this.adapters.keys()].sort(),variants,readiness:{ratesConfigured:Boolean(row&&parseFixedShippingPolicy(row.policy).rates.length),taxAdapterConfigured:Boolean(row&&this.adapters.has(row.tax_configuration_id)),missingTaxCategories:missing},paymentExecutionEnabled:false,shippingCheckoutEnabled:false};
+ }
+ async saveSettings(input:unknown){
+  if(!exact(input,['revision','enabled','rates','taxCategories','taxConfigurationId'])||!Number.isSafeInteger(input.revision)||(input.revision as number)<0||(input.revision as number)>=2147483647||typeof input.taxConfigurationId!=='string'||(input.taxConfigurationId!==''&&!this.adapters.has(input.taxConfigurationId)))fail('INVALID_SHIPPING_SETTINGS');
+  const revision=input.revision as number,policy=parseFixedShippingPolicy({enabled:input.enabled,revision:String(revision+1),rates:input.rates});
+  const categories=input.taxCategories;
+  if(!categories||typeof categories!=='object'||Array.isArray(categories)||Object.keys(categories).length>1000||Object.entries(categories).some(([id,value])=>id.length>80||!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)||typeof value!=='string'||!/^[A-Za-z0-9_-]{1,80}$/.test(value)))fail('INVALID_SHIPPING_SETTINGS');
+  const policyJson=JSON.stringify(policy),categoriesJson=JSON.stringify(categories),taxId=input.taxConfigurationId;
+  await this.db.transaction(async tx=>{
+   await this.identity(tx,true);
+   await tx.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[`shipping-settings:${this.context.merchantId}:${this.context.locationId}`]);
+   const prior=(await tx.query<{revision:number}>('SELECT revision FROM public.merchant_shipping_buyer_config WHERE merchant_id=$1 AND location_id=$2 FOR UPDATE',[this.context.merchantId,this.context.locationId])).rows[0];
+   if((prior?.revision??0)!==revision)fail('SHIPPING_SETTINGS_CHANGED');
+   const known=(await tx.query<{id:string}>('SELECT id FROM catalog_variants')).rows.map(v=>v.id);
+   if(Object.keys(JSON.parse(categoriesJson)).some(id=>!known.includes(id)))fail('INVALID_SHIPPING_SETTINGS');
+   await tx.query('INSERT INTO public.merchant_shipping_buyer_config(merchant_id,location_id,policy,tax_categories,tax_configuration_id) VALUES($1,$2,$3::jsonb,$4::jsonb,$5) ON CONFLICT(merchant_id,location_id) DO UPDATE SET revision=public.merchant_shipping_buyer_config.revision+1,policy=EXCLUDED.policy,tax_categories=EXCLUDED.tax_categories,tax_configuration_id=EXCLUDED.tax_configuration_id',[this.context.merchantId,this.context.locationId,policyJson,categoriesJson,taxId]);
+  });return this.settings();
  }
  private async configuration(tx:SqlExecutor,lock=false){
   await this.identity(tx,lock);
