@@ -1,3 +1,5 @@
+import {shippingBuyerRouter} from './merchant-shipping-buyer-router';
+import type {MerchantShippingBuyer} from './merchant-shipping-buyer';
 import type {ShippingCheckoutRehearsal} from './merchant-shipping-checkout';
 import express, {type ErrorRequestHandler} from 'express';
 import type {SqlDatabase} from '../../db/sql-database';
@@ -24,11 +26,13 @@ export function merchantPresentation(values:Readonly<Record<string,string|undefi
 }
 export function merchantWebhookPath(values:Readonly<Record<string,string|undefined>>){const path=values.SQUARE_MERCHANT_WEBHOOK_PATH??'/api/commerce/webhooks';if(!['/api/commerce/webhooks','/api/sandbox/webhooks'].includes(path))throw new Error('Unsupported merchant webhook path');return path;}
 /** Separate opt-in merchant runtime. Default synthetic and setup-only applications are unchanged. */
-export function createMerchantCommerceApp(db:SqlDatabase,values:Readonly<Record<string,string|undefined>>,auth:MerchantStaffAuth,merchant:MerchantConfig,fetcher:typeof fetch=fetch,emailFetcher:typeof fetch=fetch,development: {shippingRehearsal?:ShippingCheckoutRehearsal} = {}){
+export function createMerchantCommerceApp(db:SqlDatabase,values:Readonly<Record<string,string|undefined>>,auth:MerchantStaffAuth,merchant:MerchantConfig,fetcher:typeof fetch=fetch,emailFetcher:typeof fetch=fetch,development: {shippingRehearsal?:ShippingCheckoutRehearsal;shippingBuyer?:MerchantShippingBuyer} = {}){
  if(values.STARTER_DATASET!=='merchant-catalog-v1'||values.SQUARE_MERCHANT_COMMERCE_ENABLED!=='true')throw new Error('Merchant commerce requires explicit sandbox configuration');
  const origin=publicOrigin(values.PUBLIC_ORIGIN??'',true);if(auth.origin!==origin)throw new Error('Merchant staff origin mismatch');
  const config=merchantPaymentConfiguration(values),merchantId=config.merchantId;
  const context={merchantId,locationId:config.locationId,environment:config.environment,applicationId:config.applicationId};
+ development.shippingBuyer?.assertContext(context);
+ if(config.environment==='production'&&development.shippingBuyer)throw new Error('Development shipping is not available in production');
  const email=createMerchantEmailService(db,values,emailFetcher);
  const commerce=new MerchantCommerce(db,new MerchantSquareProvider(config,fetcher),context);
  const projector=new MerchantWebhookProjector(db,merchantWebhookConfiguration(config,origin+merchantWebhookPath(values)),merchantCommerceBridge(context));
@@ -53,7 +57,7 @@ export function createMerchantCommerceApp(db:SqlDatabase,values:Readonly<Record<
  app.get('/api/storefront',async(_req,res)=>{
   const {readiness,configuration,presentation,checkoutEnabled}=await presentationStatus();
   if(email)await assertMerchantEmailSchema(db,values);
-  res.json({mode,merchant:presentation,checkoutEnabled,confirmationEmailEnabled:Boolean(email&&config.environment==='production'),catalog:await commerce.catalog(),payment:publicMerchantPaymentConfiguration(config),...(config.environment==='sandbox'?{sandbox:publicSandboxConfiguration(sandboxConfiguration(values))}:{}),configuration,pickupAvailability:configuration?evaluatePickupAvailability(configuration.pickup,{now:new Date(Date.now()+11*60_000)}):undefined,capabilities:{checkout:checkoutEnabled&&config.environment==='production'&&readiness.ready,sandboxCheckout:checkoutEnabled&&config.environment==='sandbox',outboundMail:Boolean(email&&config.environment==='production'),schedulers:false,databaseConnected:true}});
+  res.json({mode,merchant:presentation,shippingDevelopment:Boolean(development.shippingBuyer),checkoutEnabled,confirmationEmailEnabled:Boolean(email&&config.environment==='production'),catalog:await commerce.catalog(),payment:publicMerchantPaymentConfiguration(config),...(config.environment==='sandbox'?{sandbox:publicSandboxConfiguration(sandboxConfiguration(values))}:{}),configuration,pickupAvailability:configuration?evaluatePickupAvailability(configuration.pickup,{now:new Date(Date.now()+11*60_000)}):undefined,capabilities:{checkout:checkoutEnabled&&config.environment==='production'&&readiness.ready,sandboxCheckout:checkoutEnabled&&config.environment==='sandbox',outboundMail:Boolean(email&&config.environment==='production'),schedulers:false,databaseConnected:true}});
  });
  // Must precede JSON middleware: signatures cover the original raw request bytes.
  app.use(merchantWebhookPath(values),merchantWebhookRouter(projector));
@@ -65,6 +69,7 @@ export function createMerchantCommerceApp(db:SqlDatabase,values:Readonly<Record<
  writes.post('/status',async(req,res)=>{if(!exact(req.body,['attemptId','checkoutToken']))throw new CommerceError('INVALID_REQUEST',400);await commerce.authorizeCheckout(req.body.attemptId,req.body.checkoutToken);const state=await commerce.status(req.body.attemptId);if(state.paymentId)await projector.reconcilePending(state.paymentId);res.json(await commerce.status(req.body.attemptId));});
  writes.post('/cancel',async(req,res)=>{if(!exact(req.body,['attemptId','checkoutToken']))throw new CommerceError('INVALID_REQUEST',400);await commerce.authorizeCheckout(req.body.attemptId,req.body.checkoutToken);res.json(await commerce.cancel(req.body.attemptId));});
  writes.post('/lookup',async(req,res)=>{if(!exact(req.body,['token']))throw new CommerceError('INVALID_REQUEST',400);res.json(await commerce.lookup(req.body.token));});
+ writes.use('/shipping',shippingBuyerRouter(development.shippingBuyer));
  app.use('/api/commerce',writes);
  app.use('/api/merchant-auth',merchantAuthRouter(auth));
  const admin=express.Router();
