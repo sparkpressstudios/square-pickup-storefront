@@ -1,0 +1,17 @@
+import type {ShippingPayableQuote} from '../../shared/merchant-shipping-quote';
+/** Offline CalculateOrder evidence verifier. Never trusts a buyer-supplied order/amount. */
+export class ShippingMoneyError extends Error {constructor(){super('UNVERIFIED_SHIPPING_PRICING');}}
+const obj=(v:unknown):Record<string,unknown>=>{if(!v||typeof v!=='object'||Array.isArray(v))throw new ShippingMoneyError();return v as Record<string,unknown>;};
+function money(v:unknown):number {const m=obj(v);if(m.currency!=='USD'||!Number.isSafeInteger(m.amount)||(m.amount as number)<0||(m.amount as number)>2147483647)throw new ShippingMoneyError();return m.amount as number;}
+export function verifyShippingMoney(raw:unknown,quote:ShippingPayableQuote):void {
+ const order=obj(raw),request=quote.request,tax=quote.tax,fee=request.shipping.shippingFeeMinor;
+ const merchandiseTax=tax.merchandiseIncludedTaxMinor+tax.merchandiseAdditionalTaxMinor,shippingTax=tax.shippingIncludedTaxMinor+tax.shippingAdditionalTaxMinor;
+ if(order.reference_id!==quote.id||order.location_id!==request.locationId||money(order.total_money)!==quote.totalMinor||money(order.total_tax_money)!==merchandiseTax+shippingTax||money(order.total_discount_money)!==request.merchandise.discountMinor||money(order.total_service_charge_money)!==fee||money(order.total_tip_money)!==0||!Array.isArray(order.line_items)||order.line_items.length!==request.merchandise.lines.length)throw new ShippingMoneyError();
+ let lineTotal=0,lineTax=0,includedTax=0,additionalTax=0;const seen=new Set<string>();
+ for(const rawLine of order.line_items){const line=obj(rawLine),expected=request.merchandise.lines.find(x=>x.id===line.uid);if(!expected||seen.has(expected.id)||line.quantity!==String(expected.quantity)||money(line.base_price_money)*expected.quantity!==expected.subtotalMinor||money(line.total_discount_money)!==expected.discountMinor||(line.modifiers!==undefined&&(!Array.isArray(line.modifiers)||line.modifiers.length!==0)))throw new ShippingMoneyError();seen.add(expected.id);const total=money(line.total_money),taxAmount=money(line.total_tax_money),additional=total-expected.basisMinor,included=taxAmount-additional;if(additional<0||included<0||included>expected.basisMinor)throw new ShippingMoneyError();lineTotal+=total;lineTax+=taxAmount;additionalTax+=additional;includedTax+=included;}
+ if(additionalTax!==tax.merchandiseAdditionalTaxMinor||includedTax!==tax.merchandiseIncludedTaxMinor||lineTotal!==request.merchandise.basisMinor+tax.merchandiseAdditionalTaxMinor||lineTax!==merchandiseTax||!Array.isArray(order.service_charges))throw new ShippingMoneyError();
+ if(fee===0){if(shippingTax!==0||order.service_charges.length!==0)throw new ShippingMoneyError();return;}
+ if(order.service_charges.length!==1)throw new ShippingMoneyError();const charge=obj(order.service_charges[0]);
+ // Square applied_money/total_service_charge_money contain inclusive tax, not additive tax.
+ if(charge.uid!=='shipping'||charge.scope!=='ORDER'||charge.percentage!==undefined||money(charge.amount_money)!==fee||money(charge.applied_money)!==fee||money(charge.total_tax_money)!==shippingTax||money(charge.total_money)!==fee+tax.shippingAdditionalTaxMinor||typeof charge.taxable!=='boolean'||!['SUBTOTAL_PHASE','TOTAL_PHASE'].includes(String(charge.calculation_phase))||(charge.taxable&&charge.calculation_phase!=='SUBTOTAL_PHASE')||(shippingTax>0&&!charge.taxable))throw new ShippingMoneyError();
+}

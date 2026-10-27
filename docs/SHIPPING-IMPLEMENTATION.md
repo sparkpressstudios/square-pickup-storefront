@@ -1,6 +1,6 @@
 # Pickup plus shipping: development framework, not enabled checkout
 
-The reusable template is being extended to support both pickup and shipping. **Current public buyer checkout still supports pickup only.** These modules are an inert development slice; no customer-facing shipping option, provider request, startup migration or live activation is added.
+The reusable template is being extended to support both pickup and shipping. **Current public buyer checkout still supports pickup only.** These modules are a development-only admin rehearsal; no customer-facing shipping option, real provider request, startup migration or live activation is added.
 
 ## Implemented locally
 
@@ -35,4 +35,20 @@ The earlier release-candidate and production-acceptance limitations remain uncha
 
 The request freezes merchant/location, cart lines, address, selected fee, configuration revision and expiry into one fingerprint. Adapter evidence must echo that identity, have a nonempty reference, matching currency/revision and a bounded future expiry. Inclusive tax stays inside the configured merchandise/shipping basis; only additional taxes increase the amount. Arithmetic, maximums and malformed evidence fail closed. This validates evidence from a trusted adapter—it does not independently prove that a merchant's tax rules are legally correct.
 
-A successful result contains a validated amount and frozen quote fingerprint but always `paymentExecutionEnabled: false`. It is not dispatched to Square, persisted as a checkout attempt, exposed by any route or accepted by current pickup payment code. The fingerprint is not a signature/authentication mechanism: `assertUnchanged` requires an original quote retained by the trusted server, never an original supplied by the buyer. Durable authoritative-quote storage and recovery still need integration before any payment use. Adapter timeout/failure produces no quote and no retry; no error body/PII is echoed.
+A successful result contains a validated amount and frozen quote fingerprint but always `paymentExecutionEnabled: false`. It is not dispatched to Square or accepted by current pickup payment code. The development admin rehearsal described below retains it in a separate preview table, not a real commerce/payment attempt. The fingerprint is not a signature/authentication mechanism: `assertUnchanged` requires an original quote retained by the trusted server, never an original supplied by the buyer. Live commerce-attempt storage, stock reservation and recovery still need integration before any payment use. Adapter timeout/failure produces no quote and no retry; no error body/PII is echoed.
+
+## Integrated admin rehearsal (development branch only)
+
+The existing authenticated merchant admin now has a **Shipping rehearsal** page. It is admin-only, retains existing origin/CSRF guards, and starts unconfigured. It has no enable/payment control: `/execute` always returns 423. Normal application startup registers no shipping resolver and makes no shipping schema changes. Merely setting request fields cannot activate it.
+
+Developers can explicitly inject a trusted `ShippingCheckoutRehearsal` instance into the merchant app for synthetic fixtures. Its server-owned resolver supplies the cart basis, rate policy, tax service and bounded CalculateOrder evidence adapter. The separate `db/merchant-shipping-checkout.sql` schema is development-only and must not be applied to merchant databases without the migration/restore review above. No real adapter implementation or credentials are included.
+
+A request ID durably claims one immutable quote input. Same-process duplicate clicks coalesce; a reconstructed service returns the retained quote without redispatch. Failed or interrupted claims require review rather than automatic retry. Preparation rechecks current cart, address, rate revision, tax configuration and expiry, then retains an immutable SHIPMENT preview. Neither quoting nor preparation reserves stock, creates a Square order, charges a payment or purchases a label. Configuration reads are snapshots, not a live atomic stock/configuration transaction. Browser reload recovery and production operational tooling remain unimplemented.
+
+The evidence verifier binds quote/location, currency, each line's price/quantity/discount/tax split, order totals and the one configured shipping service charge. Included taxes remain inside the basis; additive taxes increase totals. It rejects offsetting line errors, modifiers, tips and extra service charges. This is component consistency checking, **not proof of tax legality or actual Square acceptance**. The trusted adapter must eventually map reviewed tax IDs and service-charge configuration to the Square API; no outgoing request mapping is guessed here.
+
+- [Square service charges](https://developer.squareup.com/docs/orders-api/service-charges): taxable charges require `SUBTOTAL_PHASE`; setting taxable is not itself a tax strategy.
+- [OrderServiceCharge](https://developer.squareup.com/reference/square/objects/OrderServiceCharge): applied money includes inclusive tax; total money also includes additive tax.
+- [Order](https://developer.squareup.com/reference/square/objects/order): total service-charge money includes inclusive but excludes additive tax.
+
+Tests use synthetic addresses and injected offline tax/pricing data only. Required live gates remain: reviewed migration/restore, merchant-specific configuration and real adapters, exact Square tax/fee/SHIPMENT acceptance, atomic stock/order/payment workflow and uncertainty recovery, signed events/refunds/tracking, buyer selection and real sandbox end-to-end acceptance. Existing pickup tests must continue to pass. Do not advertise this admin rehearsal as available customer shipping.

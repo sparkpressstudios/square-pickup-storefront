@@ -1,3 +1,4 @@
+import {ShippingRehearsalPanel} from './shipping-rehearsal';
 import { ReleaseUpdates } from './release-updates';
 import { MerchantOperations } from './merchant-operations';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -53,6 +54,7 @@ export function AdminLayout({ path, root, navigate, children, preview, branding 
   }, [sidebarOpen]);
   const groups = commerceAvailable?[{heading:'Merchant',items:[{href:root,label:'Setup, stock & orders'},{href:`${root}/import`,label:'Import Square products'}]}]:[{ heading: 'Overview', items: [{ href: root, label: 'Dashboard' }] }, { heading: 'Catalog', items: [{ href: `${root}/products`, label: 'Products' }, { href: `${root}/import`, label: 'Import products' }] }, { heading: 'Operations', items: [...(commerceAvailable ? [{ href: `${root}/commerce`, label: 'Stock & orders' }] : []), { href: `${root}/integration`, label: 'Square connection' }, { href: `${root}/square-services`, label: 'Square services' }] }, { heading: 'System', items: [{ href: `${root}/settings`, label: 'Brand & pickup' }] }];
   if (!preview && updatesAvailable) groups.push({heading:'Releases',items:[{href:`${root}/updates`,label:'Updates'}]});
+  if (!preview && updatesAvailable && commerceAvailable) groups.push({heading:'Development',items:[{href:`${root}/shipping`,label:'Shipping rehearsal'}]});
   const active = activeAdminHref(path, groups.flatMap((group) => group.items.map((item) => item.href)), root);
   return <div className="admin-app" style={{ ...merchantTheme(branding), ...(branding.media?.hero ? { backgroundImage: `linear-gradient(#111118d9, #111118ee), url("${branding.media.hero}")` } : {}) }}>
     {sidebarOpen && <button className="admin-backdrop" aria-label="Close navigation" onClick={closeNavigation} />}
@@ -178,6 +180,7 @@ export function AdminApp() {
     {!preview && role === 'admin' && path === root && <section className="admin-card"><h2>Template updates</h2><p>Review release notices and owner-controlled upgrade instructions. Your data and customizations are not changed by checking.</p><AdminLink href={`${root}/updates`} navigate={navigate}>Open Updates</AdminLink></section>}
     {path === '/admin/login' ? <MerchantLoginPanel onSignedIn={() => { navigate('/admin'); reload(); }} />
       : error ? <section className="admin-card"><h1>Staff access unavailable</h1><p role="alert">{error}</p><p>This demo does not create staff accounts automatically.</p><a href="/admin/login">Open merchant sign-in</a> · <a href="/admin/preview">Open synthetic draft preview</a></section>
+      : path === `${root}/shipping` && !preview && commerceEnabled && role === 'admin' ? <ShippingRehearsalPanel csrfToken={csrf} />
       : path === `${root}/updates` && !preview && role === 'admin' ? <ReleaseUpdates />
       : commerceEnabled&&role==='admin'&&[root,`${root}/settings`,`${root}/products`,`${root}/commerce`].includes(path)?<MerchantOperations csrfToken={csrf} environment={paymentEnvironment} onMerchantChange={setBranding}/>
       : path === `${root}/settings` && preview ? <MerchantSettingsPreview merchant={branding} baseline={defaultMerchant} onApply={setBranding} onOpenSetup={() => navigate(`${root}/integration`)} />

@@ -1,3 +1,4 @@
+import type {ShippingCheckoutRehearsal} from './merchant-shipping-checkout';
 import express, {type ErrorRequestHandler} from 'express';
 import type {SqlDatabase} from '../../db/sql-database';
 import type {MerchantConfig} from '../../shared/storefront';
@@ -23,7 +24,7 @@ export function merchantPresentation(values:Readonly<Record<string,string|undefi
 }
 export function merchantWebhookPath(values:Readonly<Record<string,string|undefined>>){const path=values.SQUARE_MERCHANT_WEBHOOK_PATH??'/api/commerce/webhooks';if(!['/api/commerce/webhooks','/api/sandbox/webhooks'].includes(path))throw new Error('Unsupported merchant webhook path');return path;}
 /** Separate opt-in merchant runtime. Default synthetic and setup-only applications are unchanged. */
-export function createMerchantCommerceApp(db:SqlDatabase,values:Readonly<Record<string,string|undefined>>,auth:MerchantStaffAuth,merchant:MerchantConfig,fetcher:typeof fetch=fetch,emailFetcher:typeof fetch=fetch){
+export function createMerchantCommerceApp(db:SqlDatabase,values:Readonly<Record<string,string|undefined>>,auth:MerchantStaffAuth,merchant:MerchantConfig,fetcher:typeof fetch=fetch,emailFetcher:typeof fetch=fetch,development: {shippingRehearsal?:ShippingCheckoutRehearsal} = {}){
  if(values.STARTER_DATASET!=='merchant-catalog-v1'||values.SQUARE_MERCHANT_COMMERCE_ENABLED!=='true')throw new Error('Merchant commerce requires explicit sandbox configuration');
  const origin=publicOrigin(values.PUBLIC_ORIGIN??'',true);if(auth.origin!==origin)throw new Error('Merchant staff origin mismatch');
  const config=merchantPaymentConfiguration(values),merchantId=config.merchantId;
@@ -83,7 +84,7 @@ export function createMerchantCommerceApp(db:SqlDatabase,values:Readonly<Record<
  admin.post('/orders/:id/fulfillment/recover',async(req,res)=>{if(!exact(req.body,[]))throw new CommerceError('INVALID_REQUEST',400);res.json(await commerce.recoverFulfillment(req.params.id,(res.locals.staff as StaffPrincipal).id));});
  admin.post('/orders/:id/fulfillment',async(req,res)=>{if(!exact(req.body,['state']))throw new CommerceError('INVALID_REQUEST',400);res.json(await commerce.fulfill(req.params.id,req.body.state,(res.locals.staff as StaffPrincipal).id));});
  admin.post('/orders/:id/refunds',async(req,res)=>{if(!exact(req.body,['refundId','amountMinor']))throw new CommerceError('INVALID_REQUEST',400);res.json(await commerce.refund(req.params.id,req.body.refundId,req.body.amountMinor,(res.locals.staff as StaffPrincipal).id));});
- app.use('/api/admin',adminCatalogRouter({paymentEnvironment:config.environment,verifyStaff:auth.verifyStaff,origin,commerce:admin,merchantImport:createSquareMerchantImportAdministration(db,values,fetcher),runtime:{native:true,sandbox:config.environment==='sandbox'}}));
+ app.use('/api/admin',adminCatalogRouter({shippingRehearsal:development.shippingRehearsal,paymentEnvironment:config.environment,verifyStaff:auth.verifyStaff,origin,commerce:admin,merchantImport:createSquareMerchantImportAdministration(db,values,fetcher),runtime:{native:true,sandbox:config.environment==='sandbox'}}));
  app.use('/api',(_req,res)=>res.status(404).json({error:{code:'NOT_FOUND'}}));
  const errors:ErrorRequestHandler=(error:unknown,_req,res,_next)=>{
   if(error instanceof CommerceError||error instanceof CheckoutError){res.status(error.status).json({error:{code:error.code,message:error.message}});return;}

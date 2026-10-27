@@ -1,3 +1,5 @@
+import {shippingRehearsalRouter} from './merchant-shipping-router';
+import type {ShippingCheckoutRehearsal} from './merchant-shipping-checkout';
 import { createReleaseChecker } from './release-updates';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import express, { type Request } from 'express';
@@ -54,7 +56,7 @@ function sameToken(actual: string | undefined, expected: string): boolean {
   return left.length === right.length && timingSafeEqual(left, right);
 }
 /** Explicit allowlist guard adapted from source; no permissive role fallback or login provisioning. */
-export function adminCatalogRouter(options: { paymentEnvironment?:'sandbox'|'production'; commerce?: express.Router; verifyStaff?: StaffVerifier; store?: AdminCatalogStore; settings?: MerchantSettingsStore; reconciliation?: SandboxReconciliationQueue; merchantImport?: MerchantImportAdministration; squareServices?: SquareServices; promotion?: SquarePromotionService; origin?: string; runtime?: { native?: boolean; sandbox?: boolean } } = {}) {
+export function adminCatalogRouter(options: { shippingRehearsal?:ShippingCheckoutRehearsal; paymentEnvironment?:'sandbox'|'production'; commerce?: express.Router; verifyStaff?: StaffVerifier; store?: AdminCatalogStore; settings?: MerchantSettingsStore; reconciliation?: SandboxReconciliationQueue; merchantImport?: MerchantImportAdministration; squareServices?: SquareServices; promotion?: SquarePromotionService; origin?: string; runtime?: { native?: boolean; sandbox?: boolean } } = {}) {
   const router = express.Router();
   const checkRelease = createReleaseChecker();
   router.use(async (req, res, next) => {
@@ -82,6 +84,7 @@ export function adminCatalogRouter(options: { paymentEnvironment?:'sandbox'|'pro
     res.json({ id, role, csrfToken, paymentEnvironment:options.paymentEnvironment, catalogEditing: Boolean(options.store), settingsEditing: role === 'admin' && Boolean(options.settings), merchantImportEnabled: role === 'admin' && Boolean(options.merchantImport), merchantCommerceEnabled: role === 'admin' && Boolean(options.commerce), squareServicesEnabled: role === 'admin' && Boolean(options.squareServices) });
   });
   if(options.commerce) router.use('/commerce', (_req,res,next)=>{if((res.locals.staff as StaffPrincipal).role!=='admin'){res.status(403).json({error:{code:'ADMIN_REQUIRED',message:'Administrator required.'}});return;}next();}, options.commerce);
+  router.use('/shipping', shippingRehearsalRouter(options.shippingRehearsal));
   router.use('/integration', integrationAdminRouter(options.reconciliation, options.runtime));
   router.use('/merchant-import', merchantImportAdminRouter(options.merchantImport));
   router.use('/square-services', squareServicesAdminRouter(options.squareServices,options.promotion));

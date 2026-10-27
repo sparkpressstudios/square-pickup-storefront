@@ -77,6 +77,12 @@ export class ShippingQuoteService {
   const quote={id:randomUUID(),request,tax,totalMinor:tax.totalMinor,currency:'USD' as const,expiresAt:tax.expiresAt,paymentExecutionEnabled:false as const};
   return Object.freeze({...quote,fingerprint:hash(quote)});
  }
+ /** Recheck frozen inputs against current trusted configuration before preparing an offline preview. */
+ assertCurrentInputs(quote:ShippingPayableQuote,merchandise:ShippingMerchandiseBasis,policy:unknown,address:unknown,rateId:unknown):void {
+  this.assertUnchanged(quote,quote);
+  const core={merchantId:this.config.merchantId,locationId:this.config.locationId,merchandise:basis(merchandise),shipping:buildShippingDraft(policy,address,rateId),taxConfigurationRevision:this.config.revision,expiresAt:quote.request.expiresAt};
+  if(requestFingerprint(core,this.config.adapterId)!==quote.request.requestFingerprint)throw new ShippingQuoteError('SHIPPING_QUOTE_CHANGED');
+ }
  /** For server-owned retained quotes only. Fingerprint is integrity evidence, not authorization. */
  assertUnchanged(original:ShippingPayableQuote,candidate:ShippingPayableQuote):void {
   const {fingerprint,...body}=candidate;
